@@ -3398,6 +3398,87 @@ function Styles() {
         .search input { font-size: 14px !important; }
       }
 
+
+
+      /* ======================================================
+         PROFILE MODAL — CENTERED / PROFESSIONAL / READABLE
+         ====================================================== */
+      .profile-overlay {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 24px !important;
+        background: rgba(2, 6, 23, .56) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+      }
+
+      .profile-drawer {
+        position: relative !important;
+        top: auto !important;
+        right: auto !important;
+        width: min(560px, calc(100vw - 48px)) !important;
+        height: auto !important;
+        max-height: calc(100vh - 48px) !important;
+        overflow-y: auto !important;
+        padding: 28px !important;
+        border: 1px solid var(--border-strong) !important;
+        border-radius: 26px !important;
+        color: var(--text-primary) !important;
+        background: var(--page-gradient) !important;
+        box-shadow: 0 35px 100px rgba(2, 6, 23, .30) !important;
+        animation: profileModalIn .22s ease-out !important;
+      }
+
+      @keyframes profileModalIn {
+        from { opacity: 0; transform: translateY(12px) scale(.975); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .drawer-header { gap: 20px !important; }
+      .drawer-header .eyebrow { font-size: 11px !important; letter-spacing: 1.4px !important; }
+      .drawer-header h2 { margin: 5px 0 0 !important; font-size: 23px !important; line-height: 1.2 !important; }
+      .drawer-header button { width: 42px !important; height: 42px !important; flex: 0 0 auto !important; border-radius: 13px !important; font-size: 20px !important; }
+
+      .profile-drawer .profile-hero {
+        margin-top: 22px !important;
+        padding: 25px 22px !important;
+        border-radius: 21px !important;
+      }
+      .profile-drawer .avatar.avatar-large { width: 72px !important; height: 72px !important; border-radius: 22px !important; font-size: 22px !important; }
+      .profile-drawer .profile-hero h3 { margin: 14px 0 5px !important; font-size: 18px !important; line-height: 1.3 !important; }
+      .profile-drawer .profile-hero p { font-size: 13px !important; line-height: 1.5 !important; color: var(--text-muted) !important; }
+      .profile-drawer .profile-hero > span { margin-top: 12px !important; padding: 7px 11px !important; font-size: 10px !important; letter-spacing: .8px !important; }
+
+      .profile-drawer .profile-info { margin-top: 16px !important; padding: 5px 17px !important; border-radius: 18px !important; }
+      .profile-drawer .info-row { min-height: 50px !important; padding: 13px 0 !important; align-items: center !important; }
+      .profile-drawer .info-row span { font-size: 13px !important; }
+      .profile-drawer .info-row strong { max-width: 330px !important; font-size: 13px !important; line-height: 1.4 !important; }
+
+      .profile-drawer .password-button,
+      .profile-drawer .drawer-logout {
+        min-height: 48px !important;
+        padding: 13px 16px !important;
+        border-radius: 13px !important;
+        font-size: 13.5px !important;
+      }
+      .profile-drawer .password-button { margin-top: 16px !important; }
+      .profile-drawer .drawer-logout { margin-top: 9px !important; }
+
+      @media (max-width: 620px) {
+        .profile-overlay { padding: 14px !important; align-items: center !important; }
+        .profile-drawer {
+          width: 100% !important;
+          max-height: calc(100vh - 28px) !important;
+          padding: 21px !important;
+          border-radius: 22px !important;
+        }
+        .drawer-header h2 { font-size: 21px !important; }
+        .profile-drawer .profile-hero { padding: 21px 16px !important; }
+        .profile-drawer .profile-hero p { max-width: 100% !important; overflow-wrap: anywhere !important; }
+        .profile-drawer .info-row { align-items: flex-start !important; flex-direction: column !important; gap: 5px !important; }
+        .profile-drawer .info-row strong { max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; }
+      }
     `}</style>
   )
 }
