@@ -3316,6 +3316,106 @@ function DashboardStyles() {
         .search-area input { font-size: 14px !important; }
       }
 
+
+
+      /* ======================================================
+         PROFILE MODAL — CENTERED / PROFESSIONAL / READABLE
+         ====================================================== */
+      .profile-overlay {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 24px !important;
+        background: rgba(2, 6, 23, .56) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+      }
+
+      .profile-drawer {
+        position: relative !important;
+        top: auto !important;
+        right: auto !important;
+        width: min(560px, calc(100vw - 48px)) !important;
+        height: auto !important;
+        max-height: calc(100vh - 48px) !important;
+        overflow-y: auto !important;
+        padding: 28px !important;
+        border: 1px solid var(--border-strong, rgba(129,140,248,.22)) !important;
+        border-radius: 26px !important;
+        color: var(--text-primary, #f8fafc) !important;
+        background: var(--page-gradient, #0b1120) !important;
+        box-shadow: 0 35px 100px rgba(2, 6, 23, .38) !important;
+        animation: profileModalIn .22s ease-out !important;
+      }
+
+      @keyframes profileModalIn {
+        from { opacity: 0; transform: translateY(12px) scale(.975); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .profile-drawer-header { gap: 20px !important; }
+      .profile-drawer-header .eyebrow { font-size: 11px !important; letter-spacing: 1.4px !important; }
+      .profile-drawer-header h2 { margin: 5px 0 0 !important; font-size: 23px !important; line-height: 1.2 !important; }
+      .profile-drawer-header .icon-button { width: 42px !important; height: 42px !important; flex: 0 0 auto !important; border-radius: 13px !important; font-size: 20px !important; }
+
+      .profile-drawer .profile-hero {
+        margin-top: 22px !important;
+        padding: 25px 22px !important;
+        border: 1px solid var(--border, rgba(255,255,255,.08)) !important;
+        border-radius: 21px !important;
+        background: var(--card-gradient, linear-gradient(135deg,rgba(30,64,175,.20),rgba(88,28,135,.14))) !important;
+      }
+      .profile-drawer .avatar.avatar-large { width: 72px !important; height: 72px !important; border-radius: 22px !important; font-size: 22px !important; }
+      .profile-drawer .profile-hero h3 { margin: 14px 0 5px !important; font-size: 18px !important; line-height: 1.3 !important; color: var(--text-primary, #fff) !important; }
+      .profile-drawer .profile-hero p { font-size: 13px !important; line-height: 1.5 !important; color: var(--text-muted, #94a3b8) !important; }
+      .profile-drawer .member-pill { margin-top: 12px !important; padding: 7px 11px !important; font-size: 10px !important; letter-spacing: .8px !important; }
+
+      .profile-drawer .account-info-card {
+        margin-top: 16px !important;
+        padding: 5px 17px !important;
+        border: 1px solid var(--border, rgba(255,255,255,.08)) !important;
+        border-radius: 18px !important;
+        background: var(--surface-gradient, rgba(15,23,42,.75)) !important;
+      }
+      .profile-drawer .account-info-row { min-height: 50px !important; padding: 13px 0 !important; }
+      .profile-drawer .account-info-row span { font-size: 13px !important; color: var(--text-muted, #94a3b8) !important; }
+      .profile-drawer .account-info-row strong { max-width: 330px !important; font-size: 13px !important; line-height: 1.4 !important; color: var(--text-primary, #fff) !important; }
+      .profile-drawer .status-active { color: var(--success, #86efac) !important; }
+
+      .profile-drawer .security-card {
+        margin-top: 16px !important;
+        padding: 16px !important;
+        gap: 13px !important;
+        border-radius: 17px !important;
+      }
+      .profile-drawer .security-icon { width: 42px !important; height: 42px !important; border-radius: 13px !important; font-size: 16px !important; }
+      .profile-drawer .security-card strong { font-size: 13.5px !important; color: var(--text-primary, #fff) !important; }
+      .profile-drawer .security-card p { margin-top: 4px !important; font-size: 12px !important; line-height: 1.5 !important; color: var(--text-muted, #94a3b8) !important; }
+
+      .profile-drawer .change-password-button,
+      .profile-drawer .drawer-logout-button {
+        min-height: 48px !important;
+        padding: 13px 16px !important;
+        border-radius: 13px !important;
+        font-size: 13.5px !important;
+      }
+      .profile-drawer .change-password-button { margin-top: 16px !important; }
+      .profile-drawer .drawer-logout-button { margin-top: 9px !important; }
+
+      @media (max-width: 620px) {
+        .profile-overlay { padding: 14px !important; align-items: center !important; }
+        .profile-drawer {
+          width: 100% !important;
+          max-height: calc(100vh - 28px) !important;
+          padding: 21px !important;
+          border-radius: 22px !important;
+        }
+        .profile-drawer-header h2 { font-size: 21px !important; }
+        .profile-drawer .profile-hero { padding: 21px 16px !important; }
+        .profile-drawer .profile-hero p { max-width: 100% !important; overflow-wrap: anywhere !important; }
+        .profile-drawer .account-info-row { align-items: flex-start !important; flex-direction: column !important; gap: 5px !important; }
+        .profile-drawer .account-info-row strong { max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; }
+      }
     `}</style>
   )
 }
