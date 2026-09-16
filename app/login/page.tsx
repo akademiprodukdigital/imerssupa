@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import ThemeSwitcher from '../../components/ThemeSwitcher'
 
 type Profile = {
   id: string
@@ -298,6 +299,8 @@ export default function LoginPage() {
   return (
     <>
       <main className="login-page">
+        <ThemeSwitcher />
+        
         <div className="glow glow-one" />
         <div className="glow glow-two" />
         <div className="glow glow-three" />
