@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../../../../lib/supabase'
 
@@ -8,6 +8,13 @@ type Product = {
   id: string
   name: string
   slug: string
+}
+
+type Section = {
+  id: string
+  product_id: string
+  title: string
+  sort_order: number
 }
 
 type Content = {
@@ -47,6 +54,7 @@ export default function LessonReaderPage() {
 
   const [product, setProduct] = useState<Product | null>(null)
   const [lesson, setLesson] = useState<Content | null>(null)
+  const [allLessons, setAllLessons] = useState<Content[]>([])
   const [progress, setProgress] = useState<Progress | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -60,19 +68,11 @@ export default function LessonReaderPage() {
     loadLesson()
   }, [slug, lessonId])
 
-  // ==========================================================
-  // LOAD PAGE
-  // ==========================================================
-
   async function loadLesson() {
     setLoading(true)
     setError('')
     setProgressError('')
     setSuccessMessage('')
-
-    // ========================================================
-    // AUTH
-    // ========================================================
 
     const {
       data: { user },
@@ -86,10 +86,6 @@ export default function LessonReaderPage() {
 
     setUserId(user.id)
     setEmail(user.email ?? '')
-
-    // ========================================================
-    // PRODUCT
-    // ========================================================
 
     const {
       data: productData,
@@ -116,13 +112,26 @@ export default function LessonReaderPage() {
 
     setProduct(productData)
 
-    // ========================================================
-    // LESSON
-    // ========================================================
+    const {
+      data: sectionsData,
+      error: sectionsError,
+    } = await supabase
+      .from('product_sections')
+      .select('id, product_id, title, sort_order')
+      .eq('product_id', productData.id)
+      .order('sort_order', { ascending: true })
+
+    if (sectionsError) {
+      setError(sectionsError.message)
+      setLoading(false)
+      return
+    }
+
+    const sections = (sectionsData ?? []) as Section[]
 
     const {
-      data: lessonData,
-      error: lessonError,
+      data: contentsData,
+      error: contentsError,
     } = await supabase
       .from('product_contents')
       .select(`
@@ -137,18 +146,55 @@ export default function LessonReaderPage() {
         is_published,
         is_preview
       `)
-      .eq('id', lessonId)
       .eq('product_id', productData.id)
       .eq('is_published', true)
-      .maybeSingle()
 
-    if (lessonError) {
-      setError(lessonError.message)
+    if (contentsError) {
+      setError(contentsError.message)
       setLoading(false)
       return
     }
 
-    if (!lessonData) {
+    const contents = (contentsData ?? []) as Content[]
+
+    /*
+      Urutan final:
+      1. sort_order module
+      2. sort_order lesson di dalam module
+      3. materi tanpa module diletakkan terakhir
+    */
+
+    const sectionOrder = new Map<string, number>()
+
+    sections.forEach((section, index) => {
+      sectionOrder.set(section.id, index)
+    })
+
+    const sortedContents = [...contents].sort((a, b) => {
+      const aSection =
+        a.section_id && sectionOrder.has(a.section_id)
+          ? sectionOrder.get(a.section_id)!
+          : 999999
+
+      const bSection =
+        b.section_id && sectionOrder.has(b.section_id)
+          ? sectionOrder.get(b.section_id)!
+          : 999999
+
+      if (aSection !== bSection) {
+        return aSection - bSection
+      }
+
+      return a.sort_order - b.sort_order
+    })
+
+    setAllLessons(sortedContents)
+
+    const currentLesson = sortedContents.find(
+      (item) => item.id === lessonId
+    )
+
+    if (!currentLesson) {
       setError(
         'Materi tidak ditemukan atau akun ini tidak memiliki akses.'
       )
@@ -156,11 +202,7 @@ export default function LessonReaderPage() {
       return
     }
 
-    setLesson(lessonData)
-
-    // ========================================================
-    // LOAD MEMBER PROGRESS
-    // ========================================================
+    setLesson(currentLesson)
 
     const {
       data: progressData,
@@ -179,7 +221,7 @@ export default function LessonReaderPage() {
         updated_at
       `)
       .eq('user_id', user.id)
-      .eq('content_id', lessonData.id)
+      .eq('content_id', currentLesson.id)
       .maybeSingle()
 
     if (progressLoadError) {
@@ -191,9 +233,22 @@ export default function LessonReaderPage() {
     setLoading(false)
   }
 
-  // ==========================================================
-  // MARK LESSON COMPLETE
-  // ==========================================================
+  const currentIndex = useMemo(() => {
+    return allLessons.findIndex(
+      (item) => item.id === lessonId
+    )
+  }, [allLessons, lessonId])
+
+  const previousLesson =
+    currentIndex > 0
+      ? allLessons[currentIndex - 1]
+      : null
+
+  const nextLesson =
+    currentIndex >= 0 &&
+    currentIndex < allLessons.length - 1
+      ? allLessons[currentIndex + 1]
+      : null
 
   async function markAsCompleted() {
     if (!userId || !lesson) return
@@ -247,9 +302,11 @@ export default function LessonReaderPage() {
     setSavingProgress(false)
   }
 
-  // ==========================================================
-  // YOUTUBE EMBED
-  // ==========================================================
+  function openLesson(id: string) {
+    router.push(
+      `/member/product/${slug}/lesson/${id}`
+    )
+  }
 
   function getYouTubeEmbedUrl(url: string) {
     try {
@@ -283,47 +340,32 @@ export default function LessonReaderPage() {
     }
   }
 
-  // ==========================================================
-  // CONTENT TYPE
-  // ==========================================================
-
   function getTypeLabel(type: Content['content_type']) {
     switch (type) {
       case 'text':
         return 'TEXT LESSON'
-
       case 'html':
         return 'HTML LESSON'
-
       case 'video':
         return 'VIDEO LESSON'
-
       case 'external_url':
         return 'EXTERNAL RESOURCE'
-
       default:
         return 'LESSON'
     }
   }
 
-  // ==========================================================
-  // CONTENT RENDERER
-  // ==========================================================
-
   function renderContent() {
     if (!lesson) return null
-
-    // TEXT
 
     if (lesson.content_type === 'text') {
       return (
         <div style={styles.textContent}>
-          {lesson.content_text || 'Materi belum memiliki isi.'}
+          {lesson.content_text ||
+            'Materi belum memiliki isi.'}
         </div>
       )
     }
-
-    // HTML
 
     if (lesson.content_type === 'html') {
       return (
@@ -340,8 +382,6 @@ export default function LessonReaderPage() {
       )
     }
 
-    // VIDEO
-
     if (lesson.content_type === 'video') {
       const videoUrl = lesson.external_url
 
@@ -351,9 +391,7 @@ export default function LessonReaderPage() {
 
       return (
         <div>
-
           {youtubeEmbed ? (
-
             <div style={styles.videoWrapper}>
               <iframe
                 src={youtubeEmbed}
@@ -363,11 +401,8 @@ export default function LessonReaderPage() {
                 style={styles.videoIframe}
               />
             </div>
-
           ) : (
-
             <div style={styles.videoPlaceholder}>
-
               <div style={styles.playIcon}>
                 ▶
               </div>
@@ -377,8 +412,8 @@ export default function LessonReaderPage() {
               </h3>
 
               <p style={styles.muted}>
-                URL video ini belum mengarah ke video yang
-                dapat di-embed langsung.
+                Video tersedia melalui link yang
+                telah disediakan.
               </p>
 
               {videoUrl && (
@@ -391,9 +426,7 @@ export default function LessonReaderPage() {
                   Buka Video ↗
                 </a>
               )}
-
             </div>
-
           )}
 
           {lesson.content_text && (
@@ -401,17 +434,13 @@ export default function LessonReaderPage() {
               {lesson.content_text}
             </div>
           )}
-
         </div>
       )
     }
 
-    // EXTERNAL URL
-
     if (lesson.content_type === 'external_url') {
       return (
         <div style={styles.resourceBox}>
-
           <div style={styles.resourceIcon}>
             ↗
           </div>
@@ -426,7 +455,6 @@ export default function LessonReaderPage() {
           </p>
 
           {lesson.external_url ? (
-
             <a
               href={lesson.external_url}
               target="_blank"
@@ -435,36 +463,22 @@ export default function LessonReaderPage() {
             >
               Buka Resource ↗
             </a>
-
           ) : (
-
             <div style={styles.noLink}>
               Link resource belum tersedia.
             </div>
-
           )}
-
         </div>
       )
     }
 
-    return (
-      <div style={styles.emptyContent}>
-        Tipe materi belum didukung.
-      </div>
-    )
+    return null
   }
-
-  // ==========================================================
-  // LOADING
-  // ==========================================================
 
   if (loading) {
     return (
       <main style={styles.centerPage}>
-
         <div style={styles.loadingCard}>
-
           <div style={styles.loadingLogo}>
             S
           </div>
@@ -474,25 +488,17 @@ export default function LessonReaderPage() {
           </h2>
 
           <p style={styles.muted}>
-            Memeriksa akses member dan mengambil content.
+            Memeriksa akses dan progress member.
           </p>
-
         </div>
-
       </main>
     )
   }
 
-  // ==========================================================
-  // ERROR
-  // ==========================================================
-
   if (error || !lesson || !product) {
     return (
       <main style={styles.centerPage}>
-
         <div style={styles.errorCard}>
-
           <div style={styles.errorBadge}>
             CONTENT ACCESS
           </div>
@@ -513,9 +519,7 @@ export default function LessonReaderPage() {
           >
             ← Kembali ke Produk
           </button>
-
         </div>
-
       </main>
     )
   }
@@ -527,40 +531,27 @@ export default function LessonReaderPage() {
   const progressPercent =
     progress?.progress_percent ?? 0
 
-  // ==========================================================
-  // READER
-  // ==========================================================
-
   return (
     <main style={styles.page}>
-
       <div style={styles.container}>
 
-        {/* TOP BAR */}
-
         <div style={styles.topBar}>
-
           <button
             onClick={() =>
               router.push(`/member/product/${slug}`)
             }
             style={styles.backButton}
           >
-            ← Kembali ke Materi
+            ← Daftar Materi
           </button>
 
           <div style={styles.userBox}>
             <span style={styles.onlineDot}></span>
             {email}
           </div>
-
         </div>
 
-
-        {/* BREADCRUMB */}
-
         <div style={styles.breadcrumb}>
-
           {product.name}
 
           <span style={styles.breadcrumbArrow}>
@@ -568,19 +559,13 @@ export default function LessonReaderPage() {
           </span>
 
           {lesson.title}
-
         </div>
 
-
-        {/* HERO */}
-
         <section style={styles.hero}>
-
           <div style={styles.heroGlowOne}></div>
           <div style={styles.heroGlowTwo}></div>
 
           <div style={styles.heroContent}>
-
             <div style={styles.typeBadge}>
               {getTypeLabel(lesson.content_type)}
             </div>
@@ -590,61 +575,31 @@ export default function LessonReaderPage() {
             </h1>
 
             <div style={styles.lessonMeta}>
-
               <span>
-                Lesson{' '}
-                {String(lesson.sort_order).padStart(2, '0')}
+                Materi {currentIndex + 1} dari{' '}
+                {allLessons.length}
               </span>
 
-              <span style={styles.dot}>
-                •
-              </span>
+              <span style={styles.dot}>•</span>
 
-              <span>
-                Published
-              </span>
-
-              {lesson.is_preview && (
-                <>
-                  <span style={styles.dot}>
-                    •
-                  </span>
-
-                  <span style={styles.previewText}>
-                    Preview
-                  </span>
-                </>
-              )}
-
+              <span>Published</span>
             </div>
-
           </div>
-
         </section>
 
-
-        {/* PROGRESS CARD */}
-
         <section style={styles.progressCard}>
-
           <div style={styles.progressHeader}>
-
             <div>
-
               <div style={styles.progressLabel}>
                 LESSON PROGRESS
               </div>
 
               <div style={styles.progressStatus}>
-
                 {isCompleted
                   ? '✓ Materi Selesai'
                   : 'Belum Selesai'}
-
               </div>
-
             </div>
-
 
             <div
               style={{
@@ -656,32 +611,21 @@ export default function LessonReaderPage() {
             >
               {progressPercent}%
             </div>
-
           </div>
 
-
           <div style={styles.progressTrack}>
-
             <div
               style={{
                 ...styles.progressFill,
                 width: `${progressPercent}%`,
               }}
-            ></div>
-
+            />
           </div>
-
         </section>
 
-
-        {/* CONTENT */}
-
         <section style={styles.readerCard}>
-
           <div style={styles.readerTop}>
-
             <div>
-
               <div style={styles.readerLabel}>
                 MEMBER LEARNING
               </div>
@@ -689,28 +633,19 @@ export default function LessonReaderPage() {
               <h2 style={styles.readerTitle}>
                 {lesson.title}
               </h2>
-
             </div>
-
 
             <div style={styles.secureBadge}>
               ✓ Secure Access
             </div>
-
           </div>
 
-
           <div style={styles.readerDivider}></div>
-
 
           <div style={styles.contentArea}>
             {renderContent()}
           </div>
-
         </section>
-
-
-        {/* PROGRESS ACTION */}
 
         <section
           style={
@@ -719,41 +654,33 @@ export default function LessonReaderPage() {
               : styles.actionCard
           }
         >
-
           {isCompleted ? (
-
             <>
               <div style={styles.completeIcon}>
                 ✓
               </div>
 
               <div style={styles.actionInfo}>
-
                 <strong style={styles.actionTitle}>
                   Materi Selesai
                 </strong>
 
                 <div style={styles.actionText}>
-                  Progress lesson ini sudah tersimpan
-                  untuk akun member Anda.
+                  Progress materi ini sudah tersimpan.
                 </div>
-
               </div>
 
               <div style={styles.completedBadge}>
                 100%
               </div>
             </>
-
           ) : (
-
             <>
               <div style={styles.incompleteIcon}>
                 ○
               </div>
 
               <div style={styles.actionInfo}>
-
                 <strong style={styles.actionTitle}>
                   Sudah selesai mempelajari materi ini?
                 </strong>
@@ -762,9 +689,7 @@ export default function LessonReaderPage() {
                   Tandai selesai agar progress belajar
                   tersimpan ke akun Anda.
                 </div>
-
               </div>
-
 
               <button
                 onClick={markAsCompleted}
@@ -772,10 +697,9 @@ export default function LessonReaderPage() {
                 style={{
                   ...styles.completeButton,
                   opacity: savingProgress ? 0.65 : 1,
-                  cursor:
-                    savingProgress
-                      ? 'wait'
-                      : 'pointer',
+                  cursor: savingProgress
+                    ? 'wait'
+                    : 'pointer',
                 }}
               >
                 {savingProgress
@@ -783,22 +707,14 @@ export default function LessonReaderPage() {
                   : 'Tandai Selesai ✓'}
               </button>
             </>
-
           )}
-
         </section>
-
-
-        {/* SUCCESS */}
 
         {successMessage && (
           <div style={styles.successMessage}>
             ✓ {successMessage}
           </div>
         )}
-
-
-        {/* PROGRESS ERROR */}
 
         {progressError && (
           <div style={styles.progressError}>
@@ -812,11 +728,79 @@ export default function LessonReaderPage() {
           </div>
         )}
 
+        {/* PREVIOUS / NEXT */}
 
-        {/* BOTTOM */}
+        <section style={styles.navigationSection}>
+          <div style={styles.navigationLabel}>
+            NAVIGASI MATERI
+          </div>
+
+          <div style={styles.navigationGrid}>
+            {previousLesson ? (
+              <button
+                onClick={() =>
+                  openLesson(previousLesson.id)
+                }
+                style={styles.navigationCard}
+              >
+                <div style={styles.navigationDirection}>
+                  ← MATERI SEBELUMNYA
+                </div>
+
+                <div style={styles.navigationTitle}>
+                  {previousLesson.title}
+                </div>
+              </button>
+            ) : (
+              <div style={styles.navigationDisabled}>
+                <div style={styles.navigationDirection}>
+                  ← MATERI SEBELUMNYA
+                </div>
+
+                <div style={styles.navigationDisabledText}>
+                  Ini materi pertama
+                </div>
+              </div>
+            )}
+
+            {nextLesson ? (
+              <button
+                onClick={() =>
+                  openLesson(nextLesson.id)
+                }
+                style={{
+                  ...styles.navigationCard,
+                  textAlign: 'right',
+                }}
+              >
+                <div style={styles.navigationDirection}>
+                  MATERI BERIKUTNYA →
+                </div>
+
+                <div style={styles.navigationTitle}>
+                  {nextLesson.title}
+                </div>
+              </button>
+            ) : (
+              <div
+                style={{
+                  ...styles.navigationDisabled,
+                  textAlign: 'right',
+                }}
+              >
+                <div style={styles.navigationDirection}>
+                  MATERI BERIKUTNYA →
+                </div>
+
+                <div style={styles.navigationDisabledText}>
+                  Semua materi sudah dijelajahi
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
 
         <div style={styles.bottomNavigation}>
-
           <button
             onClick={() =>
               router.push(`/member/product/${slug}`)
@@ -826,13 +810,10 @@ export default function LessonReaderPage() {
             ← Daftar Materi
           </button>
 
-
           <div style={styles.bottomStatus}>
-
             <span
               style={{
                 ...styles.bottomStatusDot,
-
                 background: isCompleted
                   ? '#22c55e'
                   : '#6366f1',
@@ -842,52 +823,36 @@ export default function LessonReaderPage() {
             {isCompleted
               ? 'Progress tersimpan'
               : 'Progress belum selesai'}
-
           </div>
-
         </div>
 
-
-        {/* SECURITY */}
-
         <div style={styles.securityBox}>
-
           <div style={styles.securityIcon}>
             ✓
           </div>
 
           <div>
-
             <strong>
               Protected Member Content
             </strong>
 
             <div style={styles.securityText}>
-              Content dan progress menggunakan authenticated
-              Supabase access dan Row Level Security.
+              Content dan progress dilindungi
+              authenticated Supabase access dan Row
+              Level Security.
             </div>
-
           </div>
-
         </div>
-
       </div>
-
     </main>
   )
 }
 
-
-// ============================================================
-// STYLES
-// ============================================================
-
 const styles: Record<string, React.CSSProperties> = {
-
   page: {
     minHeight: '100vh',
     padding: '28px 18px 70px',
-    color: '#ffffff',
+    color: '#fff',
     background:
       'radial-gradient(circle at 10% 0%, #172554 0%, #070b18 38%, #030712 100%)',
     fontFamily:
@@ -906,11 +871,10 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    color: '#ffffff',
+    color: '#fff',
     background:
       'radial-gradient(circle at top, #172554, #030712 65%)',
-    fontFamily:
-      'Inter, ui-sans-serif, system-ui, sans-serif',
+    fontFamily: 'Inter, system-ui, sans-serif',
   },
 
   loadingCard: {
@@ -919,12 +883,9 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 38,
     textAlign: 'center',
     borderRadius: 26,
-    border:
-      '1px solid rgba(255,255,255,.12)',
+    border: '1px solid rgba(255,255,255,.12)',
     background:
       'linear-gradient(145deg, rgba(30,64,175,.28), rgba(88,28,135,.18))',
-    boxShadow:
-      '0 30px 80px rgba(0,0,0,.35)',
   },
 
   loadingLogo: {
@@ -947,8 +908,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 38,
     textAlign: 'center',
     borderRadius: 26,
-    border:
-      '1px solid rgba(248,113,113,.2)',
+    border: '1px solid rgba(248,113,113,.2)',
     background:
       'linear-gradient(145deg, rgba(127,29,29,.26), rgba(30,41,59,.4))',
   },
@@ -959,10 +919,8 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 999,
     fontSize: 10,
     fontWeight: 900,
-    letterSpacing: 1.5,
     color: '#fca5a5',
-    background:
-      'rgba(239,68,68,.12)',
+    background: 'rgba(239,68,68,.12)',
   },
 
   muted: {
@@ -977,7 +935,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 0,
     borderRadius: 12,
     cursor: 'pointer',
-    color: '#ffffff',
+    color: '#fff',
     fontWeight: 800,
     background:
       'linear-gradient(135deg, #2563eb, #7c3aed)',
@@ -998,10 +956,8 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontWeight: 750,
     color: '#cbd5e1',
-    border:
-      '1px solid rgba(255,255,255,.1)',
-    background:
-      'rgba(15,23,42,.6)',
+    border: '1px solid rgba(255,255,255,.1)',
+    background: 'rgba(15,23,42,.6)',
   },
 
   userBox: {
@@ -1017,8 +973,6 @@ const styles: Record<string, React.CSSProperties> = {
     height: 8,
     borderRadius: '50%',
     background: '#22c55e',
-    boxShadow:
-      '0 0 14px rgba(34,197,94,.8)',
   },
 
   breadcrumb: {
@@ -1038,12 +992,9 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'relative',
     overflow: 'hidden',
     borderRadius: 28,
-    border:
-      '1px solid rgba(255,255,255,.11)',
+    border: '1px solid rgba(255,255,255,.11)',
     background:
       'linear-gradient(135deg, rgba(30,64,175,.45), rgba(88,28,135,.38), rgba(15,23,42,.88))',
-    boxShadow:
-      '0 30px 80px rgba(0,0,0,.3)',
   },
 
   heroGlowOne: {
@@ -1053,8 +1004,7 @@ const styles: Record<string, React.CSSProperties> = {
     top: -190,
     right: -40,
     borderRadius: '50%',
-    background:
-      'rgba(59,130,246,.28)',
+    background: 'rgba(59,130,246,.28)',
     filter: 'blur(25px)',
   },
 
@@ -1065,8 +1015,7 @@ const styles: Record<string, React.CSSProperties> = {
     bottom: -200,
     left: 80,
     borderRadius: '50%',
-    background:
-      'rgba(168,85,247,.22)',
+    background: 'rgba(168,85,247,.22)',
     filter: 'blur(25px)',
   },
 
@@ -1083,18 +1032,13 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 10,
     fontWeight: 900,
     letterSpacing: 1.4,
-    border:
-      '1px solid rgba(255,255,255,.1)',
-    background:
-      'rgba(255,255,255,.08)',
+    background: 'rgba(255,255,255,.08)',
   },
 
   title: {
     margin: '15px 0 10px',
-    fontSize:
-      'clamp(29px, 5vw, 46px)',
+    fontSize: 'clamp(29px, 5vw, 46px)',
     lineHeight: 1.08,
-    letterSpacing: '-1px',
   },
 
   lessonMeta: {
@@ -1109,16 +1053,11 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#475569',
   },
 
-  previewText: {
-    color: '#fcd34d',
-  },
-
   progressCard: {
     marginTop: 18,
     padding: '18px 20px',
     borderRadius: 18,
-    border:
-      '1px solid rgba(99,102,241,.15)',
+    border: '1px solid rgba(99,102,241,.15)',
     background:
       'linear-gradient(135deg, rgba(30,64,175,.16), rgba(88,28,135,.12), rgba(15,23,42,.78))',
   },
@@ -1154,8 +1093,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: 8,
     overflow: 'hidden',
     borderRadius: 999,
-    background:
-      'rgba(255,255,255,.07)',
+    background: 'rgba(255,255,255,.07)',
   },
 
   progressFill: {
@@ -1170,12 +1108,9 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 18,
     padding: '25px 26px 30px',
     borderRadius: 24,
-    border:
-      '1px solid rgba(255,255,255,.09)',
+    border: '1px solid rgba(255,255,255,.09)',
     background:
       'linear-gradient(145deg, rgba(30,41,59,.82), rgba(15,23,42,.92))',
-    boxShadow:
-      '0 22px 60px rgba(0,0,0,.22)',
   },
 
   readerTop: {
@@ -1204,17 +1139,13 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#86efac',
     fontSize: 10,
     fontWeight: 850,
-    background:
-      'rgba(34,197,94,.1)',
-    border:
-      '1px solid rgba(34,197,94,.12)',
+    background: 'rgba(34,197,94,.1)',
   },
 
   readerDivider: {
     height: 1,
     margin: '20px 0 26px',
-    background:
-      'rgba(255,255,255,.07)',
+    background: 'rgba(255,255,255,.07)',
   },
 
   contentArea: {
@@ -1243,7 +1174,7 @@ const styles: Record<string, React.CSSProperties> = {
     paddingTop: '56.25%',
     overflow: 'hidden',
     borderRadius: 18,
-    background: '#000000',
+    background: '#000',
   },
 
   videoIframe: {
@@ -1258,8 +1189,6 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '48px 22px',
     textAlign: 'center',
     borderRadius: 20,
-    border:
-      '1px solid rgba(96,165,250,.13)',
     background:
       'linear-gradient(135deg, rgba(30,64,175,.18), rgba(88,28,135,.14))',
   },
@@ -1272,9 +1201,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: '50%',
-    fontSize: 22,
-    paddingLeft: 4,
-    color: '#ffffff',
     background:
       'linear-gradient(135deg, #2563eb, #7c3aed)',
   },
@@ -1289,8 +1215,6 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '42px 24px',
     textAlign: 'center',
     borderRadius: 20,
-    border:
-      '1px solid rgba(129,140,248,.15)',
     background:
       'linear-gradient(135deg, rgba(37,99,235,.14), rgba(124,58,237,.12))',
   },
@@ -1304,8 +1228,6 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     borderRadius: 18,
     fontSize: 27,
-    fontWeight: 900,
-    color: '#c4b5fd',
     background:
       'linear-gradient(135deg, rgba(37,99,235,.25), rgba(124,58,237,.25))',
   },
@@ -1315,7 +1237,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 20,
     padding: '12px 18px',
     borderRadius: 12,
-    color: '#ffffff',
+    color: '#fff',
     textDecoration: 'none',
     fontWeight: 800,
     background:
@@ -1324,13 +1246,6 @@ const styles: Record<string, React.CSSProperties> = {
 
   noLink: {
     marginTop: 18,
-    color: '#64748b',
-    fontSize: 13,
-  },
-
-  emptyContent: {
-    padding: 30,
-    textAlign: 'center',
     color: '#64748b',
   },
 
@@ -1342,8 +1257,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 14,
     flexWrap: 'wrap',
     borderRadius: 18,
-    border:
-      '1px solid rgba(99,102,241,.16)',
     background:
       'linear-gradient(135deg, rgba(30,64,175,.18), rgba(88,28,135,.12))',
   },
@@ -1356,8 +1269,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 14,
     flexWrap: 'wrap',
     borderRadius: 18,
-    border:
-      '1px solid rgba(34,197,94,.18)',
     background:
       'linear-gradient(135deg, rgba(6,78,59,.30), rgba(15,23,42,.72))',
   },
@@ -1365,30 +1276,25 @@ const styles: Record<string, React.CSSProperties> = {
   incompleteIcon: {
     width: 44,
     height: 44,
-    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
     fontSize: 25,
     color: '#a5b4fc',
-    background:
-      'rgba(99,102,241,.13)',
+    background: 'rgba(99,102,241,.13)',
   },
 
   completeIcon: {
     width: 44,
     height: 44,
-    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    fontSize: 20,
-    fontWeight: 900,
     color: '#86efac',
-    background:
-      'rgba(34,197,94,.13)',
+    fontWeight: 900,
+    background: 'rgba(34,197,94,.13)',
   },
 
   actionInfo: {
@@ -1404,14 +1310,13 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 4,
     color: '#94a3b8',
     fontSize: 12,
-    lineHeight: 1.6,
   },
 
   completeButton: {
     padding: '12px 17px',
     border: 0,
     borderRadius: 12,
-    color: '#ffffff',
+    color: '#fff',
     fontWeight: 850,
     background:
       'linear-gradient(135deg, #2563eb, #7c3aed)',
@@ -1421,10 +1326,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '9px 13px',
     borderRadius: 999,
     color: '#86efac',
-    fontSize: 13,
     fontWeight: 900,
-    background:
-      'rgba(34,197,94,.1)',
+    background: 'rgba(34,197,94,.1)',
   },
 
   successMessage: {
@@ -1432,11 +1335,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px 15px',
     borderRadius: 12,
     color: '#86efac',
-    fontSize: 12,
-    border:
-      '1px solid rgba(34,197,94,.14)',
-    background:
-      'rgba(6,78,59,.22)',
+    background: 'rgba(6,78,59,.22)',
   },
 
   progressError: {
@@ -1444,12 +1343,68 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px 15px',
     borderRadius: 12,
     color: '#fca5a5',
-    fontSize: 12,
-    lineHeight: 1.5,
-    border:
-      '1px solid rgba(239,68,68,.15)',
+    background: 'rgba(127,29,29,.2)',
+  },
+
+  navigationSection: {
+    marginTop: 28,
+  },
+
+  navigationLabel: {
+    marginBottom: 10,
+    color: '#818cf8',
+    fontSize: 9,
+    fontWeight: 900,
+    letterSpacing: 1.5,
+  },
+
+  navigationGrid: {
+    display: 'grid',
+    gridTemplateColumns:
+      'repeat(auto-fit, minmax(260px, 1fr))',
+    gap: 12,
+  },
+
+  navigationCard: {
+    minHeight: 105,
+    padding: 18,
+    textAlign: 'left',
+    cursor: 'pointer',
+    color: '#fff',
+    borderRadius: 18,
+    border: '1px solid rgba(99,102,241,.17)',
     background:
-      'rgba(127,29,29,.2)',
+      'linear-gradient(135deg, rgba(37,99,235,.20), rgba(124,58,237,.14), rgba(15,23,42,.82))',
+  },
+
+  navigationDisabled: {
+    minHeight: 105,
+    padding: 18,
+    borderRadius: 18,
+    border: '1px solid rgba(255,255,255,.06)',
+    background:
+      'linear-gradient(135deg, rgba(30,41,59,.45), rgba(15,23,42,.65))',
+  },
+
+  navigationDirection: {
+    color: '#818cf8',
+    fontSize: 9,
+    fontWeight: 900,
+    letterSpacing: 1.1,
+  },
+
+  navigationTitle: {
+    marginTop: 9,
+    fontSize: 15,
+    fontWeight: 850,
+    lineHeight: 1.4,
+  },
+
+  navigationDisabledText: {
+    marginTop: 9,
+    color: '#475569',
+    fontSize: 14,
+    fontWeight: 700,
   },
 
   bottomNavigation: {
@@ -1467,10 +1422,8 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     color: '#cbd5e1',
     fontWeight: 750,
-    border:
-      '1px solid rgba(255,255,255,.1)',
-    background:
-      'rgba(15,23,42,.65)',
+    border: '1px solid rgba(255,255,255,.1)',
+    background: 'rgba(15,23,42,.65)',
   },
 
   bottomStatus: {
@@ -1494,8 +1447,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 12,
     borderRadius: 17,
-    border:
-      '1px solid rgba(52,211,153,.14)',
     background:
       'linear-gradient(135deg, rgba(6,78,59,.25), rgba(15,23,42,.62))',
   },
@@ -1503,15 +1454,13 @@ const styles: Record<string, React.CSSProperties> = {
   securityIcon: {
     width: 36,
     height: 36,
-    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
     color: '#86efac',
     fontWeight: 900,
-    background:
-      'rgba(34,197,94,.12)',
+    background: 'rgba(34,197,94,.12)',
   },
 
   securityText: {
