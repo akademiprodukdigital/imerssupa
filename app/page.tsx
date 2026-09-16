@@ -3025,6 +3025,49 @@ function MarketplaceStyles() {
           !important;
         }
       }
+
+
+      /* =====================================================
+         READABILITY UPGRADE — DESKTOP + MOBILE
+         ===================================================== */
+      .market-brand .brand-copy strong { font-size: 17px !important; line-height: 1.15 !important; }
+      .market-brand .brand-copy span { font-size: 10.5px !important; line-height: 1.35 !important; letter-spacing: .16em !important; }
+      .desktop-nav button { font-size: 13px !important; font-weight: 800 !important; }
+      .member-button, .login-button { font-size: 13px !important; font-weight: 850 !important; min-height: 42px !important; padding: 0 18px !important; }
+      .hero-badge { font-size: 10.5px !important; font-weight: 900 !important; letter-spacing: .16em !important; }
+      .hero-copy > p { font-size: 15px !important; line-height: 1.8 !important; max-width: 720px !important; }
+      .primary-button, .secondary-button { font-size: 13.5px !important; font-weight: 850 !important; min-height: 48px !important; padding: 0 20px !important; }
+      .hero-trust { gap: 18px !important; }
+      .trust-item { font-size: 12px !important; font-weight: 750 !important; }
+      .trust-item > span { width: 23px !important; height: 23px !important; font-size: 12px !important; }
+      .visual-top > span { font-size: 10.5px !important; }
+      .visual-progress span, .visual-progress strong { font-size: 11px !important; }
+      .floating-card strong { font-size: 12px !important; }
+      .floating-card small { font-size: 10.5px !important; line-height: 1.4 !important; }
+      .market-search input { font-size: 14px !important; }
+      .search-meta { font-size: 11.5px !important; }
+      .section-badge { font-size: 10.5px !important; }
+      .section-heading p { font-size: 14px !important; line-height: 1.7 !important; }
+      .product-card h3 { font-size: 17px !important; line-height: 1.35 !important; }
+      .product-card p { font-size: 13px !important; line-height: 1.65 !important; }
+      .product-type, .product-status, .product-price { font-size: 11.5px !important; }
+      .product-action, .product-card button { font-size: 12.5px !important; }
+      .market-footer { font-size: 12px !important; }
+
+      @media (min-width: 1200px) {
+        .market-container { width: min(1320px, calc(100% - 72px)) !important; }
+        .hero-copy h1 { font-size: clamp(58px, 5vw, 82px) !important; line-height: 1.02 !important; }
+      }
+
+      @media (max-width: 760px) {
+        .market-brand .brand-copy strong { font-size: 15px !important; }
+        .market-brand .brand-copy span { font-size: 9.5px !important; }
+        .mobile-market-menu button { font-size: 14px !important; }
+        .hero-copy > p { font-size: 14px !important; }
+        .trust-item { font-size: 11.5px !important; }
+        .market-search input { font-size: 14px !important; }
+      }
+
     `}</style>
   )
 }
