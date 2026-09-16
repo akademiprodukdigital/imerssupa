@@ -3068,6 +3068,230 @@ function MarketplaceStyles() {
         .market-search input { font-size: 14px !important; }
       }
 
+
+
+      /* =====================================================
+         PROFESSIONAL LANDING PAGE TYPOGRAPHY — FINAL
+         Balanced desktop scale: controlled hero + readable UI
+         ===================================================== */
+
+      /* Header */
+      .market-brand .brand-copy strong {
+        font-size: 18px !important;
+        line-height: 1.1 !important;
+      }
+      .market-brand .brand-copy span {
+        font-size: 11px !important;
+        line-height: 1.35 !important;
+        letter-spacing: .13em !important;
+      }
+      .desktop-nav button {
+        font-size: 14px !important;
+        padding: 10px 15px !important;
+      }
+      .login-button,
+      .member-button {
+        font-size: 14px !important;
+        min-height: 44px !important;
+        padding: 0 19px !important;
+      }
+
+      /* Hero: intentionally smaller than previous version */
+      .market-hero {
+        padding: 82px 0 68px !important;
+      }
+      .hero-grid {
+        gap: 58px !important;
+      }
+      .hero-copy {
+        max-width: 650px !important;
+      }
+      .hero-badge {
+        padding: 8px 12px !important;
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+        letter-spacing: .12em !important;
+      }
+      .hero-copy h1 {
+        max-width: 650px !important;
+        margin: 20px 0 18px !important;
+        font-size: clamp(46px, 4.25vw, 62px) !important;
+        line-height: 1.02 !important;
+        letter-spacing: -2.4px !important;
+      }
+      .hero-copy > p {
+        max-width: 620px !important;
+        font-size: 16px !important;
+        line-height: 1.7 !important;
+      }
+      .primary-button,
+      .secondary-button {
+        min-height: 48px !important;
+        padding: 0 21px !important;
+        font-size: 14px !important;
+      }
+      .trust-item {
+        font-size: 12.5px !important;
+      }
+      .trust-item span {
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 12px !important;
+      }
+
+      /* Hero visual */
+      .visual-top span {
+        font-size: 11px !important;
+      }
+      .visual-main-card h3 {
+        font-size: 44px !important;
+      }
+      .visual-progress > div:first-child,
+      .visual-progress strong {
+        font-size: 11.5px !important;
+      }
+      .floating-card {
+        min-width: 195px !important;
+        padding: 13px !important;
+      }
+      .floating-card strong {
+        font-size: 13px !important;
+      }
+      .floating-card small {
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+      }
+
+      /* Search */
+      .market-search input {
+        font-size: 14px !important;
+      }
+      .search-meta {
+        font-size: 12px !important;
+      }
+
+      /* Product sections */
+      .section-heading span {
+        font-size: 11px !important;
+      }
+      .section-heading h2 {
+        font-size: clamp(28px, 2.5vw, 36px) !important;
+      }
+      .section-heading p {
+        font-size: 14px !important;
+        line-height: 1.6 !important;
+      }
+      .cover-placeholder span,
+      .featured-label,
+      .product-type {
+        font-size: 10.5px !important;
+      }
+      .cover-placeholder strong {
+        font-size: 19px !important;
+      }
+      .cover-placeholder small {
+        font-size: 11px !important;
+      }
+      .product-content {
+        padding: 18px !important;
+      }
+      .product-content h3 {
+        margin: 8px 0 !important;
+        font-size: 17px !important;
+        line-height: 1.35 !important;
+      }
+      .product-content > p {
+        min-height: 58px !important;
+        font-size: 13px !important;
+        line-height: 1.55 !important;
+      }
+      .product-price small {
+        font-size: 11px !important;
+      }
+      .product-price strong {
+        font-size: 15px !important;
+      }
+      .product-open {
+        padding: 10px 12px !important;
+        font-size: 12px !important;
+      }
+
+      /* About / benefits — fixes the tiny text in screenshot */
+      .about-copy h2 {
+        font-size: clamp(30px, 2.7vw, 40px) !important;
+      }
+      .about-copy p {
+        font-size: 15px !important;
+        line-height: 1.7 !important;
+      }
+      .benefit {
+        min-height: 155px !important;
+        padding: 20px !important;
+      }
+      .benefit > div {
+        width: 42px !important;
+        height: 42px !important;
+        font-size: 16px !important;
+      }
+      .benefit strong {
+        margin-top: 15px !important;
+        font-size: 15px !important;
+        line-height: 1.3 !important;
+      }
+      .benefit p {
+        margin-top: 7px !important;
+        font-size: 12.5px !important;
+        line-height: 1.55 !important;
+      }
+
+      @media (min-width: 1200px) {
+        .market-container {
+          width: min(1240px, calc(100% - 72px)) !important;
+        }
+        .hero-copy h1 {
+          font-size: clamp(50px, 4vw, 62px) !important;
+        }
+      }
+
+      @media (max-width: 850px) {
+        .market-hero {
+          padding: 62px 0 48px !important;
+        }
+        .hero-copy h1 {
+          max-width: 680px !important;
+          font-size: clamp(42px, 8vw, 58px) !important;
+        }
+        .hero-copy > p {
+          font-size: 15px !important;
+        }
+        .mobile-market-menu button {
+          font-size: 14px !important;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .hero-copy h1 {
+          font-size: clamp(38px, 11vw, 48px) !important;
+          line-height: 1.04 !important;
+          letter-spacing: -1.8px !important;
+        }
+        .hero-copy > p {
+          font-size: 14px !important;
+        }
+        .hero-badge {
+          font-size: 10px !important;
+        }
+        .primary-button,
+        .secondary-button {
+          font-size: 13px !important;
+        }
+        .benefit strong {
+          font-size: 15px !important;
+        }
+        .benefit p {
+          font-size: 13px !important;
+        }
+      }
     `}</style>
   )
 }
