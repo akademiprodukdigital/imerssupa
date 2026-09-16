@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import ThemeSwitcher from '../../components/ThemeSwitcher'
 
 type Profile = {
   id: string
@@ -478,6 +479,7 @@ export default function MemberDashboard() {
 
   return (
     <>
+      <ThemeSwitcher />
       <div className="app-shell">
 
         {/* ===================================================
@@ -3246,6 +3248,74 @@ function DashboardStyles() {
           min-width: 0;
         }
       }
+
+
+      /* =====================================================
+         MEMBER PREMIUM + READABILITY + SHARED THEME
+         ===================================================== */
+      body {
+        background: var(--page-gradient, #030712) !important;
+        color: var(--text-primary, #fff) !important;
+      }
+      .app-shell {
+        grid-template-columns: 270px minmax(0, 1fr) !important;
+        color: var(--text-primary, #fff) !important;
+        background: var(--page-gradient, #030712) !important;
+      }
+      .sidebar {
+        background: var(--sidebar-bg, rgba(3,7,18,.92)) !important;
+        border-right: 1px solid var(--border, rgba(255,255,255,.07)) !important;
+        backdrop-filter: blur(22px);
+      }
+      .topbar {
+        background: var(--topbar-bg, rgba(3,7,18,.72)) !important;
+        border-bottom-color: var(--border, rgba(255,255,255,.07)) !important;
+        backdrop-filter: blur(22px);
+      }
+      .brand-name { font-size: 17px !important; line-height: 1.15 !important; }
+      .brand-caption { font-size: 10px !important; letter-spacing: .17em !important; }
+      .menu-label { font-size: 10px !important; letter-spacing: .16em !important; }
+      .nav-item { font-size: 13.5px !important; font-weight: 760 !important; min-height: 46px !important; color: var(--text-secondary, #cbd5e1) !important; }
+      .nav-item.active { color: var(--text-primary, #fff) !important; background: var(--surface-gradient, linear-gradient(135deg,rgba(59,130,246,.18),rgba(124,58,237,.14))) !important; border-color: var(--border-strong, rgba(129,140,248,.25)) !important; }
+      .mini-profile-info strong { font-size: 12.5px !important; color: var(--text-primary, #fff) !important; }
+      .mini-profile-info span { font-size: 10.5px !important; color: var(--text-muted, #94a3b8) !important; }
+      .logout-button { font-size: 12.5px !important; }
+      .main-content { background: var(--page-gradient, #030712) !important; }
+      .search-area { background: var(--input-bg, rgba(255,255,255,.05)) !important; border-color: var(--border, rgba(255,255,255,.08)) !important; }
+      .search-area input { font-size: 13.5px !important; color: var(--text-primary, #fff) !important; }
+      .search-area input::placeholder { color: var(--text-muted, #94a3b8) !important; }
+      .top-profile strong { font-size: 12px !important; color: var(--text-primary, #fff) !important; }
+      .top-profile small { font-size: 10px !important; color: var(--text-muted, #94a3b8) !important; }
+      .eyebrow { font-size: 10.5px !important; letter-spacing: .16em !important; }
+      .welcome h1, .hero-copy h1 { font-size: clamp(34px, 3vw, 48px) !important; line-height: 1.08 !important; color: var(--text-primary, #fff) !important; }
+      .welcome p, .hero-copy p { font-size: 13.5px !important; line-height: 1.7 !important; color: var(--text-secondary, #cbd5e1) !important; }
+      .stat-card { background: var(--card-gradient, rgba(255,255,255,.05)) !important; border-color: var(--border, rgba(255,255,255,.08)) !important; box-shadow: var(--shadow, 0 20px 60px rgba(0,0,0,.15)) !important; }
+      .stat-label { font-size: 11.5px !important; color: var(--text-secondary, #cbd5e1) !important; }
+      .stat-value { font-size: 30px !important; line-height: 1 !important; color: var(--text-primary, #fff) !important; }
+      .stat-note { font-size: 11px !important; line-height: 1.45 !important; color: var(--text-muted, #94a3b8) !important; }
+      .section-heading h2 { font-size: 23px !important; color: var(--text-primary, #fff) !important; }
+      .section-heading p { font-size: 12.5px !important; line-height: 1.6 !important; color: var(--text-secondary, #cbd5e1) !important; }
+      .continue-card, .product-card, .activity-card, .resource-card, .empty-card, .profile-modal-card {
+        background: var(--card-gradient, rgba(255,255,255,.05)) !important;
+        border-color: var(--border, rgba(255,255,255,.08)) !important;
+        box-shadow: var(--shadow, 0 20px 60px rgba(0,0,0,.16)) !important;
+      }
+      .continue-info h3, .product-card h3 { font-size: 18px !important; line-height: 1.35 !important; color: var(--text-primary, #fff) !important; }
+      .continue-info p, .product-card p { font-size: 12.5px !important; line-height: 1.65 !important; color: var(--text-secondary, #cbd5e1) !important; }
+      .progress-label, .progress-meta { font-size: 11.5px !important; color: var(--text-secondary, #cbd5e1) !important; }
+      .continue-button, .open-product-button, .primary-action { font-size: 13px !important; font-weight: 850 !important; min-height: 44px !important; }
+      .activity-item strong, .resource-item strong { font-size: 12.5px !important; color: var(--text-primary, #fff) !important; }
+      .activity-item small, .resource-item small { font-size: 10.8px !important; line-height: 1.5 !important; color: var(--text-muted, #94a3b8) !important; }
+      .search-result strong { font-size: 12.5px !important; }
+      .search-result span, .search-result small { font-size: 10.5px !important; }
+      .dashboard-footer { font-size: 11.5px !important; color: var(--text-muted, #94a3b8) !important; }
+
+      @media (max-width: 900px) {
+        .app-shell { grid-template-columns: 1fr !important; }
+        .welcome h1, .hero-copy h1 { font-size: 32px !important; }
+        .search-area input { font-size: 14px !important; }
+      }
+
     `}</style>
   )
 }
