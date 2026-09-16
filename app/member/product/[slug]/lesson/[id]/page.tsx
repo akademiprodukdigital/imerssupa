@@ -23,6 +23,18 @@ type Content = {
   is_preview: boolean
 }
 
+type Progress = {
+  id: string
+  user_id: string
+  content_id: string
+  progress_percent: number
+  completed: boolean
+  last_position: number | null
+  started_at: string | null
+  completed_at: string | null
+  updated_at: string | null
+}
+
 export default function LessonReaderPage() {
   const params = useParams()
   const router = useRouter()
@@ -30,23 +42,36 @@ export default function LessonReaderPage() {
   const slug = params.slug as string
   const lessonId = params.id as string
 
+  const [userId, setUserId] = useState('')
   const [email, setEmail] = useState('')
+
   const [product, setProduct] = useState<Product | null>(null)
   const [lesson, setLesson] = useState<Content | null>(null)
+  const [progress, setProgress] = useState<Progress | null>(null)
 
   const [loading, setLoading] = useState(true)
+  const [savingProgress, setSavingProgress] = useState(false)
+
   const [error, setError] = useState('')
+  const [progressError, setProgressError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
     loadLesson()
   }, [slug, lessonId])
 
+  // ==========================================================
+  // LOAD PAGE
+  // ==========================================================
+
   async function loadLesson() {
     setLoading(true)
     setError('')
+    setProgressError('')
+    setSuccessMessage('')
 
     // ========================================================
-    // CHECK AUTH
+    // AUTH
     // ========================================================
 
     const {
@@ -59,11 +84,11 @@ export default function LessonReaderPage() {
       return
     }
 
+    setUserId(user.id)
     setEmail(user.email ?? '')
 
     // ========================================================
-    // LOAD PRODUCT
-    // Product tetap melewati RLS Supabase.
+    // PRODUCT
     // ========================================================
 
     const {
@@ -92,15 +117,7 @@ export default function LessonReaderPage() {
     setProduct(productData)
 
     // ========================================================
-    // LOAD LESSON
-    //
-    // Kita filter:
-    // - ID lesson
-    // - product_id
-    // - published
-    //
-    // Jadi lesson dari produk lain tidak bisa "nyasar".
-    // RLS tetap menjadi lapisan security utama.
+    // LESSON
     // ========================================================
 
     const {
@@ -140,18 +157,104 @@ export default function LessonReaderPage() {
     }
 
     setLesson(lessonData)
+
+    // ========================================================
+    // LOAD MEMBER PROGRESS
+    // ========================================================
+
+    const {
+      data: progressData,
+      error: progressLoadError,
+    } = await supabase
+      .from('member_content_progress')
+      .select(`
+        id,
+        user_id,
+        content_id,
+        progress_percent,
+        completed,
+        last_position,
+        started_at,
+        completed_at,
+        updated_at
+      `)
+      .eq('user_id', user.id)
+      .eq('content_id', lessonData.id)
+      .maybeSingle()
+
+    if (progressLoadError) {
+      setProgressError(progressLoadError.message)
+    } else {
+      setProgress(progressData)
+    }
+
     setLoading(false)
   }
 
   // ==========================================================
-  // VIDEO HELPERS
+  // MARK LESSON COMPLETE
+  // ==========================================================
+
+  async function markAsCompleted() {
+    if (!userId || !lesson) return
+
+    setSavingProgress(true)
+    setProgressError('')
+    setSuccessMessage('')
+
+    const now = new Date().toISOString()
+
+    const payload = {
+      user_id: userId,
+      content_id: lesson.id,
+      progress_percent: 100,
+      completed: true,
+      last_position: 100,
+      started_at: progress?.started_at || now,
+      completed_at: now,
+      updated_at: now,
+    }
+
+    const {
+      data,
+      error: saveError,
+    } = await supabase
+      .from('member_content_progress')
+      .upsert(payload, {
+        onConflict: 'user_id,content_id',
+      })
+      .select(`
+        id,
+        user_id,
+        content_id,
+        progress_percent,
+        completed,
+        last_position,
+        started_at,
+        completed_at,
+        updated_at
+      `)
+      .single()
+
+    if (saveError) {
+      setProgressError(saveError.message)
+      setSavingProgress(false)
+      return
+    }
+
+    setProgress(data)
+    setSuccessMessage('Materi berhasil ditandai selesai.')
+    setSavingProgress(false)
+  }
+
+  // ==========================================================
+  // YOUTUBE EMBED
   // ==========================================================
 
   function getYouTubeEmbedUrl(url: string) {
     try {
       const parsed = new URL(url)
 
-      // youtube.com/watch?v=XXXX
       if (
         parsed.hostname.includes('youtube.com') &&
         parsed.searchParams.get('v')
@@ -159,7 +262,6 @@ export default function LessonReaderPage() {
         return `https://www.youtube.com/embed/${parsed.searchParams.get('v')}`
       }
 
-      // youtu.be/XXXX
       if (parsed.hostname.includes('youtu.be')) {
         const videoId = parsed.pathname.replace('/', '')
 
@@ -168,7 +270,6 @@ export default function LessonReaderPage() {
         }
       }
 
-      // youtube.com/embed/XXXX
       if (
         parsed.hostname.includes('youtube.com') &&
         parsed.pathname.includes('/embed/')
@@ -183,7 +284,7 @@ export default function LessonReaderPage() {
   }
 
   // ==========================================================
-  // CONTENT TYPE LABEL
+  // CONTENT TYPE
   // ==========================================================
 
   function getTypeLabel(type: Content['content_type']) {
@@ -212,9 +313,7 @@ export default function LessonReaderPage() {
   function renderContent() {
     if (!lesson) return null
 
-    // --------------------------------------------------------
     // TEXT
-    // --------------------------------------------------------
 
     if (lesson.content_type === 'text') {
       return (
@@ -224,9 +323,7 @@ export default function LessonReaderPage() {
       )
     }
 
-    // --------------------------------------------------------
     // HTML
-    // --------------------------------------------------------
 
     if (lesson.content_type === 'html') {
       return (
@@ -243,12 +340,11 @@ export default function LessonReaderPage() {
       )
     }
 
-    // --------------------------------------------------------
     // VIDEO
-    // --------------------------------------------------------
 
     if (lesson.content_type === 'video') {
       const videoUrl = lesson.external_url
+
       const youtubeEmbed = videoUrl
         ? getYouTubeEmbedUrl(videoUrl)
         : null
@@ -281,8 +377,8 @@ export default function LessonReaderPage() {
               </h3>
 
               <p style={styles.muted}>
-                URL video contoh ini belum mengarah ke video yang
-                dapat di-embed.
+                URL video ini belum mengarah ke video yang
+                dapat di-embed langsung.
               </p>
 
               {videoUrl && (
@@ -310,9 +406,7 @@ export default function LessonReaderPage() {
       )
     }
 
-    // --------------------------------------------------------
     // EXTERNAL URL
-    // --------------------------------------------------------
 
     if (lesson.content_type === 'external_url') {
       return (
@@ -426,6 +520,13 @@ export default function LessonReaderPage() {
     )
   }
 
+  const isCompleted =
+    progress?.completed === true ||
+    progress?.progress_percent === 100
+
+  const progressPercent =
+    progress?.progress_percent ?? 0
+
   // ==========================================================
   // READER
   // ==========================================================
@@ -435,9 +536,7 @@ export default function LessonReaderPage() {
 
       <div style={styles.container}>
 
-        {/* ====================================================
-            TOP BAR
-        ==================================================== */}
+        {/* TOP BAR */}
 
         <div style={styles.topBar}>
 
@@ -458,22 +557,22 @@ export default function LessonReaderPage() {
         </div>
 
 
-        {/* ====================================================
-            BREADCRUMB
-        ==================================================== */}
+        {/* BREADCRUMB */}
 
         <div style={styles.breadcrumb}>
+
           {product.name}
+
           <span style={styles.breadcrumbArrow}>
             /
           </span>
+
           {lesson.title}
+
         </div>
 
 
-        {/* ====================================================
-            LESSON HERO
-        ==================================================== */}
+        {/* HERO */}
 
         <section style={styles.hero}>
 
@@ -493,20 +592,24 @@ export default function LessonReaderPage() {
             <div style={styles.lessonMeta}>
 
               <span>
-                Lesson {String(lesson.sort_order).padStart(2, '0')}
+                Lesson{' '}
+                {String(lesson.sort_order).padStart(2, '0')}
               </span>
 
-              <span style={styles.dot}>•</span>
+              <span style={styles.dot}>
+                •
+              </span>
 
               <span>
-                {lesson.is_published
-                  ? 'Published'
-                  : 'Draft'}
+                Published
               </span>
 
               {lesson.is_preview && (
                 <>
-                  <span style={styles.dot}>•</span>
+                  <span style={styles.dot}>
+                    •
+                  </span>
+
                   <span style={styles.previewText}>
                     Preview
                   </span>
@@ -520,9 +623,58 @@ export default function LessonReaderPage() {
         </section>
 
 
-        {/* ====================================================
-            CONTENT READER
-        ==================================================== */}
+        {/* PROGRESS CARD */}
+
+        <section style={styles.progressCard}>
+
+          <div style={styles.progressHeader}>
+
+            <div>
+
+              <div style={styles.progressLabel}>
+                LESSON PROGRESS
+              </div>
+
+              <div style={styles.progressStatus}>
+
+                {isCompleted
+                  ? '✓ Materi Selesai'
+                  : 'Belum Selesai'}
+
+              </div>
+
+            </div>
+
+
+            <div
+              style={{
+                ...styles.progressPercent,
+                color: isCompleted
+                  ? '#86efac'
+                  : '#bfdbfe',
+              }}
+            >
+              {progressPercent}%
+            </div>
+
+          </div>
+
+
+          <div style={styles.progressTrack}>
+
+            <div
+              style={{
+                ...styles.progressFill,
+                width: `${progressPercent}%`,
+              }}
+            ></div>
+
+          </div>
+
+        </section>
+
+
+        {/* CONTENT */}
 
         <section style={styles.readerCard}>
 
@@ -539,6 +691,7 @@ export default function LessonReaderPage() {
               </h2>
 
             </div>
+
 
             <div style={styles.secureBadge}>
               ✓ Secure Access
@@ -557,9 +710,110 @@ export default function LessonReaderPage() {
         </section>
 
 
-        {/* ====================================================
-            BOTTOM NAVIGATION
-        ==================================================== */}
+        {/* PROGRESS ACTION */}
+
+        <section
+          style={
+            isCompleted
+              ? styles.completedCard
+              : styles.actionCard
+          }
+        >
+
+          {isCompleted ? (
+
+            <>
+              <div style={styles.completeIcon}>
+                ✓
+              </div>
+
+              <div style={styles.actionInfo}>
+
+                <strong style={styles.actionTitle}>
+                  Materi Selesai
+                </strong>
+
+                <div style={styles.actionText}>
+                  Progress lesson ini sudah tersimpan
+                  untuk akun member Anda.
+                </div>
+
+              </div>
+
+              <div style={styles.completedBadge}>
+                100%
+              </div>
+            </>
+
+          ) : (
+
+            <>
+              <div style={styles.incompleteIcon}>
+                ○
+              </div>
+
+              <div style={styles.actionInfo}>
+
+                <strong style={styles.actionTitle}>
+                  Sudah selesai mempelajari materi ini?
+                </strong>
+
+                <div style={styles.actionText}>
+                  Tandai selesai agar progress belajar
+                  tersimpan ke akun Anda.
+                </div>
+
+              </div>
+
+
+              <button
+                onClick={markAsCompleted}
+                disabled={savingProgress}
+                style={{
+                  ...styles.completeButton,
+                  opacity: savingProgress ? 0.65 : 1,
+                  cursor:
+                    savingProgress
+                      ? 'wait'
+                      : 'pointer',
+                }}
+              >
+                {savingProgress
+                  ? 'Menyimpan...'
+                  : 'Tandai Selesai ✓'}
+              </button>
+            </>
+
+          )}
+
+        </section>
+
+
+        {/* SUCCESS */}
+
+        {successMessage && (
+          <div style={styles.successMessage}>
+            ✓ {successMessage}
+          </div>
+        )}
+
+
+        {/* PROGRESS ERROR */}
+
+        {progressError && (
+          <div style={styles.progressError}>
+            <strong>
+              Progress belum dapat disimpan.
+            </strong>
+
+            <div style={{ marginTop: 4 }}>
+              {progressError}
+            </div>
+          </div>
+        )}
+
+
+        {/* BOTTOM */}
 
         <div style={styles.bottomNavigation}>
 
@@ -573,20 +827,28 @@ export default function LessonReaderPage() {
           </button>
 
 
-          <div style={styles.progressPlaceholder}>
+          <div style={styles.bottomStatus}>
 
-            <span style={styles.progressDot}></span>
+            <span
+              style={{
+                ...styles.bottomStatusDot,
 
-            Progress akan aktif di step berikutnya
+                background: isCompleted
+                  ? '#22c55e'
+                  : '#6366f1',
+              }}
+            ></span>
+
+            {isCompleted
+              ? 'Progress tersimpan'
+              : 'Progress belum selesai'}
 
           </div>
 
         </div>
 
 
-        {/* ====================================================
-            SECURITY INFO
-        ==================================================== */}
+        {/* SECURITY */}
 
         <div style={styles.securityBox}>
 
@@ -601,7 +863,7 @@ export default function LessonReaderPage() {
             </strong>
 
             <div style={styles.securityText}>
-              Content ditampilkan melalui authenticated
+              Content dan progress menggunakan authenticated
               Supabase access dan Row Level Security.
             </div>
 
@@ -657,10 +919,12 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 38,
     textAlign: 'center',
     borderRadius: 26,
-    border: '1px solid rgba(255,255,255,.12)',
+    border:
+      '1px solid rgba(255,255,255,.12)',
     background:
       'linear-gradient(145deg, rgba(30,64,175,.28), rgba(88,28,135,.18))',
-    boxShadow: '0 30px 80px rgba(0,0,0,.35)',
+    boxShadow:
+      '0 30px 80px rgba(0,0,0,.35)',
   },
 
   loadingLogo: {
@@ -675,7 +939,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 900,
     background:
       'linear-gradient(135deg, #2563eb, #7c3aed)',
-    boxShadow: '0 12px 35px rgba(37,99,235,.28)',
   },
 
   errorCard: {
@@ -684,7 +947,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 38,
     textAlign: 'center',
     borderRadius: 26,
-    border: '1px solid rgba(248,113,113,.2)',
+    border:
+      '1px solid rgba(248,113,113,.2)',
     background:
       'linear-gradient(145deg, rgba(127,29,29,.26), rgba(30,41,59,.4))',
   },
@@ -697,7 +961,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 900,
     letterSpacing: 1.5,
     color: '#fca5a5',
-    background: 'rgba(239,68,68,.12)',
+    background:
+      'rgba(239,68,68,.12)',
   },
 
   muted: {
@@ -733,8 +998,10 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontWeight: 750,
     color: '#cbd5e1',
-    border: '1px solid rgba(255,255,255,.1)',
-    background: 'rgba(15,23,42,.6)',
+    border:
+      '1px solid rgba(255,255,255,.1)',
+    background:
+      'rgba(15,23,42,.6)',
   },
 
   userBox: {
@@ -750,7 +1017,8 @@ const styles: Record<string, React.CSSProperties> = {
     height: 8,
     borderRadius: '50%',
     background: '#22c55e',
-    boxShadow: '0 0 14px rgba(34,197,94,.8)',
+    boxShadow:
+      '0 0 14px rgba(34,197,94,.8)',
   },
 
   breadcrumb: {
@@ -770,10 +1038,12 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'relative',
     overflow: 'hidden',
     borderRadius: 28,
-    border: '1px solid rgba(255,255,255,.11)',
+    border:
+      '1px solid rgba(255,255,255,.11)',
     background:
       'linear-gradient(135deg, rgba(30,64,175,.45), rgba(88,28,135,.38), rgba(15,23,42,.88))',
-    boxShadow: '0 30px 80px rgba(0,0,0,.3)',
+    boxShadow:
+      '0 30px 80px rgba(0,0,0,.3)',
   },
 
   heroGlowOne: {
@@ -783,7 +1053,8 @@ const styles: Record<string, React.CSSProperties> = {
     top: -190,
     right: -40,
     borderRadius: '50%',
-    background: 'rgba(59,130,246,.28)',
+    background:
+      'rgba(59,130,246,.28)',
     filter: 'blur(25px)',
   },
 
@@ -794,7 +1065,8 @@ const styles: Record<string, React.CSSProperties> = {
     bottom: -200,
     left: 80,
     borderRadius: '50%',
-    background: 'rgba(168,85,247,.22)',
+    background:
+      'rgba(168,85,247,.22)',
     filter: 'blur(25px)',
   },
 
@@ -811,13 +1083,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 10,
     fontWeight: 900,
     letterSpacing: 1.4,
-    border: '1px solid rgba(255,255,255,.1)',
-    background: 'rgba(255,255,255,.08)',
+    border:
+      '1px solid rgba(255,255,255,.1)',
+    background:
+      'rgba(255,255,255,.08)',
   },
 
   title: {
     margin: '15px 0 10px',
-    fontSize: 'clamp(29px, 5vw, 46px)',
+    fontSize:
+      'clamp(29px, 5vw, 46px)',
     lineHeight: 1.08,
     letterSpacing: '-1px',
   },
@@ -838,14 +1113,69 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#fcd34d',
   },
 
+  progressCard: {
+    marginTop: 18,
+    padding: '18px 20px',
+    borderRadius: 18,
+    border:
+      '1px solid rgba(99,102,241,.15)',
+    background:
+      'linear-gradient(135deg, rgba(30,64,175,.16), rgba(88,28,135,.12), rgba(15,23,42,.78))',
+  },
+
+  progressHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 15,
+    marginBottom: 13,
+  },
+
+  progressLabel: {
+    color: '#818cf8',
+    fontSize: 9,
+    fontWeight: 900,
+    letterSpacing: 1.5,
+  },
+
+  progressStatus: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: 800,
+  },
+
+  progressPercent: {
+    fontSize: 25,
+    fontWeight: 900,
+  },
+
+  progressTrack: {
+    width: '100%',
+    height: 8,
+    overflow: 'hidden',
+    borderRadius: 999,
+    background:
+      'rgba(255,255,255,.07)',
+  },
+
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    background:
+      'linear-gradient(90deg, #2563eb, #7c3aed, #22c55e)',
+    transition: 'width .35s ease',
+  },
+
   readerCard: {
-    marginTop: 20,
+    marginTop: 18,
     padding: '25px 26px 30px',
     borderRadius: 24,
-    border: '1px solid rgba(255,255,255,.09)',
+    border:
+      '1px solid rgba(255,255,255,.09)',
     background:
       'linear-gradient(145deg, rgba(30,41,59,.82), rgba(15,23,42,.92))',
-    boxShadow: '0 22px 60px rgba(0,0,0,.22)',
+    boxShadow:
+      '0 22px 60px rgba(0,0,0,.22)',
   },
 
   readerTop: {
@@ -874,14 +1204,17 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#86efac',
     fontSize: 10,
     fontWeight: 850,
-    background: 'rgba(34,197,94,.1)',
-    border: '1px solid rgba(34,197,94,.12)',
+    background:
+      'rgba(34,197,94,.1)',
+    border:
+      '1px solid rgba(34,197,94,.12)',
   },
 
   readerDivider: {
     height: 1,
     margin: '20px 0 26px',
-    background: 'rgba(255,255,255,.07)',
+    background:
+      'rgba(255,255,255,.07)',
   },
 
   contentArea: {
@@ -925,7 +1258,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '48px 22px',
     textAlign: 'center',
     borderRadius: 20,
-    border: '1px solid rgba(96,165,250,.13)',
+    border:
+      '1px solid rgba(96,165,250,.13)',
     background:
       'linear-gradient(135deg, rgba(30,64,175,.18), rgba(88,28,135,.14))',
   },
@@ -943,7 +1277,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#ffffff',
     background:
       'linear-gradient(135deg, #2563eb, #7c3aed)',
-    boxShadow: '0 14px 40px rgba(37,99,235,.3)',
   },
 
   videoDescription: {
@@ -956,7 +1289,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '42px 24px',
     textAlign: 'center',
     borderRadius: 20,
-    border: '1px solid rgba(129,140,248,.15)',
+    border:
+      '1px solid rgba(129,140,248,.15)',
     background:
       'linear-gradient(135deg, rgba(37,99,235,.14), rgba(124,58,237,.12))',
   },
@@ -986,7 +1320,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800,
     background:
       'linear-gradient(135deg, #2563eb, #7c3aed)',
-    boxShadow: '0 12px 30px rgba(37,99,235,.22)',
   },
 
   noLink: {
@@ -999,6 +1332,124 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 30,
     textAlign: 'center',
     color: '#64748b',
+  },
+
+  actionCard: {
+    marginTop: 18,
+    padding: 18,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    flexWrap: 'wrap',
+    borderRadius: 18,
+    border:
+      '1px solid rgba(99,102,241,.16)',
+    background:
+      'linear-gradient(135deg, rgba(30,64,175,.18), rgba(88,28,135,.12))',
+  },
+
+  completedCard: {
+    marginTop: 18,
+    padding: 18,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    flexWrap: 'wrap',
+    borderRadius: 18,
+    border:
+      '1px solid rgba(34,197,94,.18)',
+    background:
+      'linear-gradient(135deg, rgba(6,78,59,.30), rgba(15,23,42,.72))',
+  },
+
+  incompleteIcon: {
+    width: 44,
+    height: 44,
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    fontSize: 25,
+    color: '#a5b4fc',
+    background:
+      'rgba(99,102,241,.13)',
+  },
+
+  completeIcon: {
+    width: 44,
+    height: 44,
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    fontSize: 20,
+    fontWeight: 900,
+    color: '#86efac',
+    background:
+      'rgba(34,197,94,.13)',
+  },
+
+  actionInfo: {
+    flex: 1,
+    minWidth: 210,
+  },
+
+  actionTitle: {
+    fontSize: 14,
+  },
+
+  actionText: {
+    marginTop: 4,
+    color: '#94a3b8',
+    fontSize: 12,
+    lineHeight: 1.6,
+  },
+
+  completeButton: {
+    padding: '12px 17px',
+    border: 0,
+    borderRadius: 12,
+    color: '#ffffff',
+    fontWeight: 850,
+    background:
+      'linear-gradient(135deg, #2563eb, #7c3aed)',
+  },
+
+  completedBadge: {
+    padding: '9px 13px',
+    borderRadius: 999,
+    color: '#86efac',
+    fontSize: 13,
+    fontWeight: 900,
+    background:
+      'rgba(34,197,94,.1)',
+  },
+
+  successMessage: {
+    marginTop: 12,
+    padding: '12px 15px',
+    borderRadius: 12,
+    color: '#86efac',
+    fontSize: 12,
+    border:
+      '1px solid rgba(34,197,94,.14)',
+    background:
+      'rgba(6,78,59,.22)',
+  },
+
+  progressError: {
+    marginTop: 12,
+    padding: '12px 15px',
+    borderRadius: 12,
+    color: '#fca5a5',
+    fontSize: 12,
+    lineHeight: 1.5,
+    border:
+      '1px solid rgba(239,68,68,.15)',
+    background:
+      'rgba(127,29,29,.2)',
   },
 
   bottomNavigation: {
@@ -1016,11 +1467,13 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     color: '#cbd5e1',
     fontWeight: 750,
-    border: '1px solid rgba(255,255,255,.1)',
-    background: 'rgba(15,23,42,.65)',
+    border:
+      '1px solid rgba(255,255,255,.1)',
+    background:
+      'rgba(15,23,42,.65)',
   },
 
-  progressPlaceholder: {
+  bottomStatus: {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
@@ -1028,11 +1481,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
   },
 
-  progressDot: {
+  bottomStatusDot: {
     width: 7,
     height: 7,
     borderRadius: '50%',
-    background: '#6366f1',
   },
 
   securityBox: {
@@ -1042,7 +1494,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 12,
     borderRadius: 17,
-    border: '1px solid rgba(52,211,153,.14)',
+    border:
+      '1px solid rgba(52,211,153,.14)',
     background:
       'linear-gradient(135deg, rgba(6,78,59,.25), rgba(15,23,42,.62))',
   },
@@ -1057,7 +1510,8 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     color: '#86efac',
     fontWeight: 900,
-    background: 'rgba(34,197,94,.12)',
+    background:
+      'rgba(34,197,94,.12)',
   },
 
   securityText: {
