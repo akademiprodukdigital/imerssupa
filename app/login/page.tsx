@@ -814,7 +814,7 @@ function LoginStyles() {
       .brand-caption {
         margin-top: 2px;
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
         font-weight: 950;
         letter-spacing: 1.8px;
       }
@@ -826,7 +826,7 @@ function LoginStyles() {
           rgba(99, 102, 241, 0.15);
         border-radius: 999px;
         color: #a5b4fc;
-        font-size: 8px;
+        font-size: 11px;
         font-weight: 950;
         letter-spacing: 1.5px;
         background:
@@ -863,7 +863,7 @@ function LoginStyles() {
         max-width: 570px;
         margin: 0;
         color: #94a3b8;
-        font-size: 13px;
+        font-size: 15px;
         line-height: 1.8;
       }
 
@@ -920,12 +920,12 @@ function LoginStyles() {
 
       .feature-card strong {
         color: #e2e8f0;
-        font-size: 9px;
+        font-size: 13px;
       }
 
       .feature-card span {
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
         line-height: 1.45;
       }
 
@@ -935,7 +935,7 @@ function LoginStyles() {
         align-items: center;
         gap: 8px;
         color: #475569;
-        font-size: 8px;
+        font-size: 11px;
       }
 
       .role-dot {
@@ -990,7 +990,7 @@ function LoginStyles() {
 
       .eyebrow {
         color: #818cf8;
-        font-size: 8px;
+        font-size: 11px;
         font-weight: 950;
         letter-spacing: 1.7px;
       }
@@ -1004,7 +1004,7 @@ function LoginStyles() {
       .login-description {
         margin: 0;
         color: #64748b;
-        font-size: 10px;
+        font-size: 13px;
         line-height: 1.6;
       }
 
@@ -1018,7 +1018,7 @@ function LoginStyles() {
         display: block;
         margin-bottom: 7px;
         color: #cbd5e1;
-        font-size: 9px;
+        font-size: 13px;
         font-weight: 850;
       }
 
@@ -1035,7 +1035,7 @@ function LoginStyles() {
         border: 0;
         cursor: pointer;
         color: #a5b4fc;
-        font-size: 8px;
+        font-size: 11px;
         font-weight: 850;
         background: transparent;
       }
@@ -1076,7 +1076,7 @@ function LoginStyles() {
         flex: 0 0 auto;
         color: #818cf8;
         text-align: center;
-        font-size: 11px;
+        font-size: 14px;
         font-weight: 950;
       }
 
@@ -1087,7 +1087,7 @@ function LoginStyles() {
         border: 0;
         outline: 0;
         color: #ffffff;
-        font-size: 11px;
+        font-size: 14px;
         background: transparent;
       }
 
@@ -1105,7 +1105,7 @@ function LoginStyles() {
         border: 0;
         cursor: pointer;
         color: #818cf8;
-        font-size: 7px;
+        font-size: 11px;
         font-weight: 950;
         background: transparent;
       }
@@ -1140,7 +1140,7 @@ function LoginStyles() {
         justify-content: center;
         border-radius: 8px;
         color: #fca5a5;
-        font-size: 10px;
+        font-size: 13px;
         font-weight: 950;
         background:
           rgba(239, 68, 68, 0.12);
@@ -1152,12 +1152,12 @@ function LoginStyles() {
       }
 
       .error-message strong {
-        font-size: 9px;
+        font-size: 13px;
       }
 
       .error-message span {
         color: #fca5a5;
-        font-size: 8px;
+        font-size: 11px;
         line-height: 1.45;
       }
 
@@ -1173,7 +1173,7 @@ function LoginStyles() {
         border-radius: 14px;
         cursor: pointer;
         color: #ffffff;
-        font-size: 10px;
+        font-size: 13px;
         font-weight: 900;
         background:
           linear-gradient(
@@ -1244,7 +1244,7 @@ function LoginStyles() {
         justify-content: center;
         border-radius: 10px;
         color: #86efac;
-        font-size: 10px;
+        font-size: 13px;
         font-weight: 950;
         background:
           rgba(34, 197, 94, 0.1);
@@ -1257,12 +1257,12 @@ function LoginStyles() {
 
       .security-card strong {
         color: #d1fae5;
-        font-size: 8px;
+        font-size: 11px;
       }
 
       .security-card span {
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
         line-height: 1.4;
       }
 
@@ -1270,7 +1270,7 @@ function LoginStyles() {
         margin-top: 20px;
         color: #334155;
         text-align: center;
-        font-size: 7px;
+        font-size: 11px;
       }
 
       /* ==============================================
@@ -1318,7 +1318,7 @@ function LoginStyles() {
       .loading-card p {
         margin: 0;
         color: #64748b;
-        font-size: 9px;
+        font-size: 13px;
       }
 
       .loading-line {
