@@ -1476,6 +1476,50 @@ function Menu({
         Resources
       </button>
 
+      <div className="menu-title second">
+        COMMERCE
+      </div>
+
+      <button
+        className="menu-item"
+        onClick={() =>
+          go('/admin/orders')
+        }
+      >
+        <i>▤</i>
+        Orders & Transactions
+      </button>
+
+      <button
+        className="menu-item"
+        onClick={() =>
+          go('/admin/payments')
+        }
+      >
+        <i>◫</i>
+        Payments
+      </button>
+
+      <button
+        className="menu-item"
+        onClick={() =>
+          go('/admin/affiliates')
+        }
+      >
+        <i>⌘</i>
+        Affiliate & Coupons
+      </button>
+
+      <button
+        className="menu-item"
+        onClick={() =>
+          go('/admin/notifications')
+        }
+      >
+        <i>◌</i>
+        Notifications
+      </button>
+
       {isSuperAdmin && (
         <>
           <div className="menu-title second">
@@ -1502,6 +1546,16 @@ function Menu({
           >
             <i>⚙</i>
             System Settings
+          </button>
+
+          <button
+            className="menu-item"
+            onClick={() =>
+              go('/admin/settings/commerce')
+            }
+          >
+            <i>◈</i>
+            Commerce Settings
           </button>
 
           <button
