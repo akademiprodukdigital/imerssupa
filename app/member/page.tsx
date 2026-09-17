@@ -73,10 +73,21 @@ export default function MemberDashboard() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [memberView, setMemberView] = useState<'dashboard' | 'products' | 'learning' | 'resources'>('dashboard')
   const [profileOpen, setProfileOpen] = useState(false)
 
   useEffect(() => {
     loadDashboard()
+
+    if (typeof window !== 'undefined') {
+      const view = new URLSearchParams(window.location.search).get('view')
+      if (view === 'products' || view === 'learning' || view === 'resources') {
+        setMemberView(view)
+      }
+      if (view === 'profile') {
+        setProfileOpen(true)
+      }
+    }
   }, [])
 
   async function loadDashboard() {
@@ -224,6 +235,19 @@ export default function MemberDashboard() {
       behavior: 'smooth',
       block: 'start',
     })
+  }
+
+  function openMemberView(
+    view: 'dashboard' | 'products' | 'learning' | 'resources'
+  ) {
+    setMenuOpen(false)
+    setMemberView(view)
+
+    if (typeof window !== 'undefined') {
+      const url = view === 'dashboard' ? '/member' : `/member?view=${view}`
+      window.history.pushState({}, '', url)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   function isCompleted(contentId: string) {
@@ -507,32 +531,32 @@ export default function MemberDashboard() {
 
             <nav className="sidebar-nav">
               <button
-                className="nav-item active"
-                onClick={() => scrollTo('dashboard')}
+                className={`nav-item ${memberView === 'dashboard' ? 'active' : ''}`}
+                onClick={() => openMemberView('dashboard')}
               >
                 <span className="nav-icon">⌂</span>
                 Dashboard
               </button>
 
               <button
-                className="nav-item"
-                onClick={() => scrollTo('my-products')}
+                className={`nav-item ${memberView === 'products' ? 'active' : ''}`}
+                onClick={() => openMemberView('products')}
               >
                 <span className="nav-icon">▣</span>
                 Produk Saya
               </button>
 
               <button
-                className="nav-item"
-                onClick={continueLearning}
+                className={`nav-item ${memberView === 'learning' ? 'active' : ''}`}
+                onClick={() => openMemberView('learning')}
               >
                 <span className="nav-icon">▶</span>
                 Lanjut Belajar
               </button>
 
               <button
-                className="nav-item"
-                onClick={() => scrollTo('resources')}
+                className={`nav-item ${memberView === 'resources' ? 'active' : ''}`}
+                onClick={() => openMemberView('resources')}
               >
                 <span className="nav-icon">◆</span>
                 Resources
@@ -610,35 +634,32 @@ export default function MemberDashboard() {
 
               <nav className="sidebar-nav">
                 <button
-                  className="nav-item active"
-                  onClick={() => scrollTo('dashboard')}
+                  className={`nav-item ${memberView === 'dashboard' ? 'active' : ''}`}
+                  onClick={() => openMemberView('dashboard')}
                 >
                   <span className="nav-icon">⌂</span>
                   Dashboard
                 </button>
 
                 <button
-                  className="nav-item"
-                  onClick={() => scrollTo('my-products')}
+                  className={`nav-item ${memberView === 'products' ? 'active' : ''}`}
+                  onClick={() => openMemberView('products')}
                 >
                   <span className="nav-icon">▣</span>
                   Produk Saya
                 </button>
 
                 <button
-                  className="nav-item"
-                  onClick={() => {
-                    setMenuOpen(false)
-                    continueLearning()
-                  }}
+                  className={`nav-item ${memberView === 'learning' ? 'active' : ''}`}
+                  onClick={() => openMemberView('learning')}
                 >
                   <span className="nav-icon">▶</span>
                   Lanjut Belajar
                 </button>
 
                 <button
-                  className="nav-item"
-                  onClick={() => scrollTo('resources')}
+                  className={`nav-item ${memberView === 'resources' ? 'active' : ''}`}
+                  onClick={() => openMemberView('resources')}
                 >
                   <span className="nav-icon">◆</span>
                   Resources
@@ -782,10 +803,39 @@ export default function MemberDashboard() {
               </div>
             )}
 
+            {memberView !== 'dashboard' && (
+              <section className="member-view-header">
+                <div>
+                  <div className="eyebrow">
+                    {memberView === 'products'
+                      ? 'MY LIBRARY'
+                      : memberView === 'learning'
+                        ? 'CONTINUE LEARNING'
+                        : 'MEMBER RESOURCES'}
+                  </div>
+                  <h1>
+                    {memberView === 'products'
+                      ? 'Produk Saya'
+                      : memberView === 'learning'
+                        ? 'Lanjut Belajar'
+                        : 'Resources & Bonus'}
+                  </h1>
+                  <p>
+                    {memberView === 'products'
+                      ? 'Semua produk digital yang aktif di akun Anda.'
+                      : memberView === 'learning'
+                        ? 'Lanjutkan materi terakhir dan pantau progress pembelajaran Anda.'
+                        : 'Akses bonus, link dan resource dari seluruh produk yang Anda miliki.'}
+                  </p>
+                </div>
+              </section>
+            )}
+
             {/* =================================================
                 WELCOME
             ================================================= */}
 
+            {memberView === 'dashboard' && (
             <section className="welcome-section">
               <div>
                 <div className="eyebrow">
@@ -814,11 +864,13 @@ export default function MemberDashboard() {
                 </strong>
               </div>
             </section>
+            )}
 
             {/* =================================================
                 STATS
             ================================================= */}
 
+            {memberView === 'dashboard' && (
             <section className="stats-grid">
               <StatCard
                 icon="▣"
@@ -855,11 +907,13 @@ export default function MemberDashboard() {
                 variant="pink"
               />
             </section>
+            )}
 
             {/* =================================================
                 CONTINUE LEARNING
             ================================================= */}
 
+            {(memberView === 'dashboard' || memberView === 'learning') && (
             <section className="section-block">
               <div className="section-heading">
                 <div>
@@ -984,11 +1038,13 @@ export default function MemberDashboard() {
                 </div>
               )}
             </section>
+            )}
 
             {/* =================================================
                 MY PRODUCTS
             ================================================= */}
 
+            {(memberView === 'dashboard' || memberView === 'products') && (
             <section
               className="section-block"
               id="my-products"
@@ -1113,15 +1169,18 @@ export default function MemberDashboard() {
                 </div>
               )}
             </section>
+            )}
 
             {/* =================================================
                 ACTIVITY + RESOURCES
             ================================================= */}
 
-            <section className="bottom-grid">
+            {(memberView === 'dashboard' || memberView === 'resources') && (
+            <section className={`bottom-grid ${memberView === 'resources' ? 'resources-only' : ''}`}>
 
               {/* ACTIVITY */}
 
+              {memberView === 'dashboard' && (
               <div className="panel-card">
                 <div className="panel-heading">
                   <div>
@@ -1180,6 +1239,7 @@ export default function MemberDashboard() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* RESOURCES */}
 
@@ -1269,6 +1329,7 @@ export default function MemberDashboard() {
                 )}
               </div>
             </section>
+            )}
 
             <footer className="dashboard-footer">
               <span>
@@ -2054,6 +2115,36 @@ function DashboardStyles() {
 
       .welcome-date strong {
         font-size: 12px;
+      }
+
+      .member-view-header {
+        margin-bottom: 24px;
+        padding: 28px 30px;
+        border: 1px solid rgba(99, 102, 241, 0.12);
+        border-radius: 22px;
+        background:
+          radial-gradient(circle at 15% 20%, rgba(191, 219, 254, 0.72), transparent 32%),
+          radial-gradient(circle at 85% 25%, rgba(233, 213, 255, 0.72), transparent 34%),
+          rgba(255,255,255,0.58);
+        box-shadow: 0 20px 50px rgba(79, 70, 229, 0.08);
+      }
+
+      .member-view-header h1 {
+        margin: 5px 0 6px;
+        font-size: clamp(28px, 3vw, 42px);
+        line-height: 1.05;
+        letter-spacing: -1.2px;
+      }
+
+      .member-view-header p {
+        margin: 0;
+        color: #64748b;
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .bottom-grid.resources-only {
+        grid-template-columns: minmax(0, 1fr);
       }
 
       .stats-grid {
