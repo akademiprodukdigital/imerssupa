@@ -810,7 +810,7 @@ function Styles() {
 
       .brand span {
         color: var(--text-muted);
-        font-size: 6px;
+        font-size: 10px;
         font-weight: 900;
         letter-spacing: 1.5px;
       }
@@ -844,13 +844,13 @@ function Styles() {
 
       .role-card span {
         color: var(--text-muted);
-        font-size: 6px;
+        font-size: 10px;
         font-weight: 900;
         letter-spacing: 1px;
       }
 
       .role-card strong {
-        font-size: 9px;
+        font-size: 13px;
       }
 
       .menu {
@@ -862,7 +862,7 @@ function Styles() {
       .menu-title {
         margin: 0 10px 7px;
         color: var(--text-soft);
-        font-size: 7px;
+        font-size: 11px;
         font-weight: 950;
         letter-spacing: 1.4px;
       }
@@ -882,7 +882,7 @@ function Styles() {
         cursor: pointer;
         color: var(--text-muted);
         text-align: left;
-        font-size: 9px;
+        font-size: 13px;
         font-weight: 750;
         background: transparent;
         transition: .2s ease;
@@ -936,7 +936,7 @@ function Styles() {
         justify-content: center;
         border-radius: 11px;
         color: #fff;
-        font-size: 10px;
+        font-size: 13px;
         font-weight: 950;
         background: var(--primary-gradient);
       }
@@ -960,13 +960,13 @@ function Styles() {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 8px;
+        font-size: 12px;
       }
 
       .account-card small,
       .top-profile small {
         color: var(--text-muted);
-        font-size: 6px;
+        font-size: 10px;
       }
 
       .logout,
@@ -976,7 +976,7 @@ function Styles() {
         border-radius: 11px;
         cursor: pointer;
         color: var(--danger);
-        font-size: 8px;
+        font-size: 12px;
         font-weight: 800;
         background: rgba(127, 29, 29, .07);
       }
@@ -1010,7 +1010,7 @@ function Styles() {
         border-radius: 11px;
         cursor: pointer;
         color: var(--text-secondary);
-        font-size: 8px;
+        font-size: 12px;
         font-weight: 800;
         background: var(--surface-gradient);
       }
@@ -1067,7 +1067,7 @@ function Styles() {
 
       .eyebrow {
         color: var(--accent);
-        font-size: 7px;
+        font-size: 11px;
         font-weight: 950;
         letter-spacing: 1.5px;
       }
@@ -1096,7 +1096,7 @@ function Styles() {
         max-width: 620px;
         margin: 0;
         color: var(--text-muted);
-        font-size: 10px;
+        font-size: 13px;
         line-height: 1.7;
       }
 
@@ -1140,19 +1140,19 @@ function Styles() {
 
       .hero-visual span {
         color: var(--accent);
-        font-size: 6px;
+        font-size: 10px;
         font-weight: 950;
         letter-spacing: 1px;
       }
 
       .hero-visual strong {
-        font-size: 13px;
+        font-size: 14px;
       }
 
       .hero-visual small {
         max-width: 220px;
         color: var(--text-muted);
-        font-size: 7px;
+        font-size: 11px;
         line-height: 1.5;
       }
 
@@ -1213,13 +1213,13 @@ function Styles() {
       }
 
       .notice strong {
-        font-size: 9px;
+        font-size: 13px;
       }
 
       .notice p {
         margin: 0;
         color: var(--text-muted);
-        font-size: 7px;
+        font-size: 11px;
         line-height: 1.5;
       }
 
@@ -1227,7 +1227,7 @@ function Styles() {
         padding: 6px 8px;
         border-radius: 8px;
         color: #c4b5fd;
-        font-size: 6px;
+        font-size: 10px;
         font-weight: 950;
         letter-spacing: .8px;
         background: rgba(99, 102, 241, .1);
@@ -1250,7 +1250,7 @@ function Styles() {
       .section-heading p {
         margin: 0;
         color: var(--text-muted);
-        font-size: 8px;
+        font-size: 12px;
       }
 
       .settings-grid {
@@ -1361,13 +1361,13 @@ function Styles() {
 
       .card-content h3 {
         margin: 0 0 7px;
-        font-size: 13px;
+        font-size: 14px;
       }
 
       .card-content p {
         margin: 0;
         color: var(--text-muted);
-        font-size: 8px;
+        font-size: 12px;
         line-height: 1.65;
       }
 
@@ -1377,7 +1377,7 @@ function Styles() {
         align-items: center;
         justify-content: space-between;
         color: var(--accent);
-        font-size: 7px;
+        font-size: 11px;
         font-weight: 900;
       }
 
@@ -1415,7 +1415,7 @@ function Styles() {
         max-width: 500px;
         margin: 0;
         color: var(--text-muted);
-        font-size: 8px;
+        font-size: 12px;
         line-height: 1.65;
       }
 
@@ -1445,7 +1445,7 @@ function Styles() {
         justify-content: center;
         border-radius: 10px;
         color: var(--accent-light);
-        font-size: 10px;
+        font-size: 13px;
         font-weight: 950;
         background: rgba(99, 102, 241, .1);
       }
@@ -1458,11 +1458,11 @@ function Styles() {
 
       .provider small {
         color: var(--text-muted);
-        font-size: 6px;
+        font-size: 10px;
       }
 
       .provider strong {
-        font-size: 8px;
+        font-size: 12px;
       }
 
       footer {
@@ -1473,7 +1473,7 @@ function Styles() {
         gap: 15px;
         border-top: 1px solid var(--border);
         color: var(--text-soft);
-        font-size: 7px;
+        font-size: 11px;
       }
 
       .mobile-overlay {
@@ -1552,7 +1552,7 @@ function Styles() {
 
       .loading-card span {
         color: var(--accent);
-        font-size: 6px;
+        font-size: 10px;
         font-weight: 950;
         letter-spacing: 1px;
       }
@@ -1565,7 +1565,7 @@ function Styles() {
       .loading-card p {
         margin: 0;
         color: var(--text-muted);
-        font-size: 8px;
+        font-size: 12px;
       }
 
       .loader {
@@ -1641,7 +1641,7 @@ function Styles() {
         }
 
         .mobile-brand strong {
-          font-size: 11px;
+          font-size: 13px;
         }
 
         .back-button {
