@@ -3424,7 +3424,15 @@ function Styles() {
          READABILITY UPGRADE — ADMIN / SUPER ADMIN
          ===================================================== */
       .admin-shell { grid-template-columns: 270px minmax(0, 1fr) !important; }
-      .sidebar { padding: 24px 18px 18px !important; }
+      .sidebar {
+        padding: 24px 18px 18px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+      }
+      .sidebar > div:first-child { flex: 0 0 auto; }
+      .sidebar-bottom { flex: 0 0 auto; margin-top: 18px; padding-bottom: 4px; }
       .brand strong { font-size: 17px !important; line-height: 1.15 !important; }
       .brand small, .brand span { font-size: 10.5px !important; line-height: 1.35 !important; }
       .role-card span { font-size: 10px !important; letter-spacing: .14em !important; }
