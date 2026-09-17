@@ -39,6 +39,7 @@ export default function AdminPaymentsPage(){
  const logout=async()=>{await supabase.auth.signOut();router.replace('/login')}
  if(loading)return <div className="loading"><div><b>iS</b><span>PAYMENT MANAGEMENT</span><strong>Menyiapkan data pembayaran...</strong></div></div>
 
+ const isSuperAdmin=profile?.role==='super_admin'
  const displayName=profile?.full_name?.trim()||email.split('@')[0]||'Administrator'
  const initials=displayName.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'A'
 
