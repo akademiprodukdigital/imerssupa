@@ -93,6 +93,11 @@ export default function ThemeSwitcher() {
       <div
         className="theme-switcher theme-loading"
         aria-hidden="true"
+        style={{
+          width: 118,
+          height: 38,
+          flex: '0 0 auto',
+        }}
       />
     )
   }
@@ -101,6 +106,18 @@ export default function ThemeSwitcher() {
     <div
       className="theme-switcher"
       aria-label="Pilih tema"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        width: 'auto',
+        minWidth: 0,
+        maxWidth: 'none',
+        flex: '0 0 auto',
+        padding: 4,
+        borderRadius: 14,
+        whiteSpace: 'nowrap',
+      }}
     >
       <button
         type="button"
@@ -114,14 +131,31 @@ export default function ThemeSwitcher() {
         onClick={() =>
           changeTheme('light')
         }
+        style={{
+          width: 32,
+          minWidth: 32,
+          height: 30,
+          padding: 0,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flex: '0 0 32px',
+          borderRadius: 10,
+        }}
       >
-        <span className="theme-symbol">
+        <span
+          className="theme-symbol"
+          aria-hidden="true"
+          style={{
+            display: 'block',
+            width: 'auto',
+            lineHeight: 1,
+            fontSize: 14,
+          }}
+        >
           ☀
         </span>
 
-        <span className="theme-text">
-          Light
-        </span>
       </button>
 
       <button
@@ -136,14 +170,31 @@ export default function ThemeSwitcher() {
         onClick={() =>
           changeTheme('dark')
         }
+        style={{
+          width: 32,
+          minWidth: 32,
+          height: 30,
+          padding: 0,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flex: '0 0 32px',
+          borderRadius: 10,
+        }}
       >
-        <span className="theme-symbol">
+        <span
+          className="theme-symbol"
+          aria-hidden="true"
+          style={{
+            display: 'block',
+            width: 'auto',
+            lineHeight: 1,
+            fontSize: 14,
+          }}
+        >
           ◐
         </span>
 
-        <span className="theme-text">
-          Dark
-        </span>
       </button>
 
       <button
@@ -158,14 +209,31 @@ export default function ThemeSwitcher() {
         onClick={() =>
           changeTheme('system')
         }
+        style={{
+          width: 32,
+          minWidth: 32,
+          height: 30,
+          padding: 0,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flex: '0 0 32px',
+          borderRadius: 10,
+        }}
       >
-        <span className="theme-symbol">
+        <span
+          className="theme-symbol"
+          aria-hidden="true"
+          style={{
+            display: 'block',
+            width: 'auto',
+            lineHeight: 1,
+            fontSize: 14,
+          }}
+        >
           ◫
         </span>
 
-        <span className="theme-text">
-          System
-        </span>
       </button>
     </div>
   )
