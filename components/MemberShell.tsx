@@ -38,13 +38,13 @@ export default function MemberShell({
       <button className={`ms-nav ${active === 'dashboard' ? 'active' : ''}`} onClick={() => go('/member')}>
         <span className="ms-nav-icon">⌂</span><span>Dashboard</span>
       </button>
-      <button className={`ms-nav ${active === 'products' ? 'active' : ''}`} onClick={() => go('/member#my-products')}>
+      <button className={`ms-nav ${active === 'products' ? 'active' : ''}`} onClick={() => go('/member?view=products')}>
         <span className="ms-nav-icon">▣</span><span>Produk Saya</span>
       </button>
-      <button className={`ms-nav ${active === 'learning' ? 'active' : ''}`} onClick={() => go('/member#continue-learning')}>
+      <button className={`ms-nav ${active === 'learning' ? 'active' : ''}`} onClick={() => go('/member?view=learning')}>
         <span className="ms-nav-icon">▶</span><span>Lanjut Belajar</span>
       </button>
-      <button className={`ms-nav ${active === 'resources' ? 'active' : ''}`} onClick={() => go('/member#resources')}>
+      <button className={`ms-nav ${active === 'resources' ? 'active' : ''}`} onClick={() => go('/member?view=resources')}>
         <span className="ms-nav-icon">◆</span><span>Resources</span>
       </button>
       <button className={`ms-nav ${active === 'profile' ? 'active' : ''}`} onClick={() => go('/member')}>
