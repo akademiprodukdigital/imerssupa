@@ -873,6 +873,20 @@ export default function AdminDashboard() {
    COMPONENTS
 ========================================================== */
 
+function Avatar({
+  url,
+  initials,
+}: {
+  url?: string | null
+  initials: string
+}) {
+  return (
+    <div className="avatar">
+      {url ? <img src={url} alt="" /> : initials}
+    </div>
+  )
+}
+
 function Stat({
   icon,
   label,
