@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../../lib/supabase'
+import MemberShell from '../../../../components/MemberShell'
 
 type Product = {
   id: string
@@ -374,7 +375,8 @@ export default function MemberProductPage() {
   // ==========================================================
 
   return (
-    <main style={styles.page}>
+    <MemberShell email={email} active="products">
+      <main style={styles.page}>
       <div style={styles.container}>
 
         {/* ====================================================
@@ -899,7 +901,8 @@ export default function MemberProductPage() {
           </div>
         </div>
       </div>
-    </main>
+      </main>
+    </MemberShell>
   )
 }
 
@@ -909,18 +912,17 @@ export default function MemberProductPage() {
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
-    minHeight: '100vh',
-    padding: '28px 18px 70px',
+    minHeight: 'auto',
+    padding: 0,
     color: '#ffffff',
-    background:
-      'radial-gradient(circle at 10% 0%, #172554 0%, #070b18 38%, #030712 100%)',
+    background: 'transparent',
     fontFamily:
       'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
 
   container: {
     width: '100%',
-    maxWidth: 1080,
+    maxWidth: 1180,
     margin: '0 auto',
   },
 
@@ -978,7 +980,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-block',
     padding: '6px 11px',
     borderRadius: 999,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1.5,
     color: '#fca5a5',
@@ -1088,7 +1090,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '7px 11px',
     borderRadius: 999,
     color: '#bfdbfe',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1.5,
     border: '1px solid rgba(255,255,255,.1)',
@@ -1114,7 +1116,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '9px 13px',
     borderRadius: 999,
     color: '#86efac',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 0.6,
     border: '1px solid rgba(34,197,94,.15)',
@@ -1125,7 +1127,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '9px 13px',
     borderRadius: 999,
     color: '#fde68a',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 0.6,
     border: '1px solid rgba(250,204,21,.18)',
@@ -1156,7 +1158,7 @@ const styles: Record<string, React.CSSProperties> = {
   statLabel: {
     marginTop: 3,
     color: '#94a3b8',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: 700,
   },
 
@@ -1179,7 +1181,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   progressEyebrow: {
     color: '#818cf8',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1.5,
   },
@@ -1191,7 +1193,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   progressDescription: {
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 14,
   },
 
   progressNumber: {
@@ -1223,7 +1225,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     marginTop: 10,
     color: '#64748b',
-    fontSize: 11,
+    fontSize: 13,
   },
 
   contentHeader: {
@@ -1237,7 +1239,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   contentEyebrow: {
     color: '#818cf8',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1.5,
   },
@@ -1249,7 +1251,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   contentCount: {
     color: '#64748b',
-    fontSize: 12,
+    fontSize: 14,
   },
 
   sectionList: {
@@ -1298,7 +1300,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   moduleLabel: {
     color: '#818cf8',
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1.4,
   },
@@ -1310,14 +1312,14 @@ const styles: Record<string, React.CSSProperties> = {
 
   sectionMeta: {
     color: '#64748b',
-    fontSize: 10,
+    fontSize: 12,
   },
 
   sectionLessonCount: {
     padding: '7px 10px',
     borderRadius: 999,
     color: '#94a3b8',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 850,
     background: 'rgba(255,255,255,.05)',
   },
@@ -1326,7 +1328,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '7px 10px',
     borderRadius: 999,
     color: '#86efac',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 900,
     background: 'rgba(34,197,94,.10)',
     border: '1px solid rgba(34,197,94,.12)',
@@ -1394,7 +1396,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   lessonNumber: {
     color: '#64748b',
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1,
   },
@@ -1403,7 +1405,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '3px 6px',
     borderRadius: 999,
     color: '#818cf8',
-    fontSize: 7,
+    fontSize: 12,
     fontWeight: 900,
     background: 'rgba(99,102,241,.08)',
   },
@@ -1421,7 +1423,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '3px 6px',
     borderRadius: 999,
     color: '#fde68a',
-    fontSize: 7,
+    fontSize: 12,
     fontWeight: 900,
     background: 'rgba(250,204,21,.08)',
   },
@@ -1435,13 +1437,13 @@ const styles: Record<string, React.CSSProperties> = {
 
   completedText: {
     color: '#86efac',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 900,
   },
 
   notCompletedText: {
     color: '#64748b',
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: 850,
   },
 
@@ -1454,7 +1456,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 20,
     textAlign: 'center',
     color: '#64748b',
-    fontSize: 12,
+    fontSize: 14,
   },
 
   emptyProduct: {
@@ -1508,7 +1510,7 @@ const styles: Record<string, React.CSSProperties> = {
   securityText: {
     marginTop: 3,
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 14,
     lineHeight: 1.5,
   },
 }
