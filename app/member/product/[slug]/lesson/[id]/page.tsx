@@ -55,7 +55,9 @@ export default function LessonReaderPage() {
 
   const [product, setProduct] = useState<Product | null>(null)
   const [lesson, setLesson] = useState<Content | null>(null)
+  const [sections, setSections] = useState<Section[]>([])
   const [allLessons, setAllLessons] = useState<Content[]>([])
+  const [allProgress, setAllProgress] = useState<Progress[]>([])
   const [progress, setProgress] = useState<Progress | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -129,6 +131,7 @@ export default function LessonReaderPage() {
     }
 
     const sections = (sectionsData ?? []) as Section[]
+    setSections(sections)
 
     const {
       data: contentsData,
@@ -205,6 +208,8 @@ export default function LessonReaderPage() {
 
     setLesson(currentLesson)
 
+    const lessonIds = sortedContents.map((item) => item.id)
+
     const {
       data: progressData,
       error: progressLoadError,
@@ -222,13 +227,16 @@ export default function LessonReaderPage() {
         updated_at
       `)
       .eq('user_id', user.id)
-      .eq('content_id', currentLesson.id)
-      .maybeSingle()
+      .in('content_id', lessonIds.length > 0 ? lessonIds : [currentLesson.id])
 
     if (progressLoadError) {
       setProgressError(progressLoadError.message)
     } else {
-      setProgress(progressData)
+      const rows = (progressData ?? []) as Progress[]
+      setAllProgress(rows)
+      setProgress(
+        rows.find((row) => row.content_id === currentLesson.id) ?? null
+      )
     }
 
     setLoading(false)
@@ -299,6 +307,10 @@ export default function LessonReaderPage() {
     }
 
     setProgress(data)
+    setAllProgress((current) => [
+      ...current.filter((row) => row.content_id !== data.content_id),
+      data,
+    ])
     setSuccessMessage('Materi berhasil ditandai selesai.')
     setSavingProgress(false)
   }
@@ -476,6 +488,20 @@ export default function LessonReaderPage() {
     return null
   }
 
+  function lessonCompleted(id: string) {
+    const row = allProgress.find((item) => item.content_id === id)
+    return row?.completed === true || Number(row?.progress_percent ?? 0) >= 100
+  }
+
+  const curriculumGroups = sections.map((section) => ({
+    ...section,
+    lessons: allLessons.filter((item) => item.section_id === section.id),
+  }))
+
+  const ungroupedLessons = allLessons.filter(
+    (item) => !item.section_id || !sections.some((section) => section.id === item.section_id)
+  )
+
   if (loading) {
     return (
       <main style={styles.centerPage}>
@@ -535,317 +561,256 @@ export default function LessonReaderPage() {
   return (
     <MemberShell email={email} active="learning">
       <main style={styles.page}>
-      <div style={styles.container}>
-
-        <div style={styles.topBar}>
-          <button
-            onClick={() =>
-              router.push(`/member/product/${slug}`)
-            }
-            style={styles.backButton}
-          >
-            ← Daftar Materi
-          </button>
-
-          <div style={styles.userBox}>
-            <span style={styles.onlineDot}></span>
-            {email}
-          </div>
-        </div>
-
-        <div style={styles.breadcrumb}>
-          {product.name}
-
-          <span style={styles.breadcrumbArrow}>
-            /
-          </span>
-
-          {lesson.title}
-        </div>
-
-        <section style={styles.hero}>
-          <div style={styles.heroGlowOne}></div>
-          <div style={styles.heroGlowTwo}></div>
-
-          <div style={styles.heroContent}>
-            <div style={styles.typeBadge}>
-              {getTypeLabel(lesson.content_type)}
-            </div>
-
-            <h1 style={styles.title}>
-              {lesson.title}
-            </h1>
-
-            <div style={styles.lessonMeta}>
-              <span>
-                Materi {currentIndex + 1} dari{' '}
-                {allLessons.length}
-              </span>
-
-              <span style={styles.dot}>•</span>
-
-              <span>Published</span>
-            </div>
-          </div>
-        </section>
-
-        <section style={styles.progressCard}>
-          <div style={styles.progressHeader}>
-            <div>
-              <div style={styles.progressLabel}>
-                LESSON PROGRESS
-              </div>
-
-              <div style={styles.progressStatus}>
-                {isCompleted
-                  ? '✓ Materi Selesai'
-                  : 'Belum Selesai'}
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...styles.progressPercent,
-                color: isCompleted
-                  ? '#86efac'
-                  : '#bfdbfe',
-              }}
+        <div style={styles.container}>
+          <div style={styles.courseTopbar}>
+            <button
+              onClick={() => router.push('/member?view=learning')}
+              style={styles.backButton}
             >
-              {progressPercent}%
+              ← Lanjut Belajar
+            </button>
+
+            <div style={styles.courseIdentity}>
+              <span style={styles.onlineDot} />
+              <span>{product.name}</span>
             </div>
           </div>
 
-          <div style={styles.progressTrack}>
-            <div
-              style={{
-                ...styles.progressFill,
-                width: `${progressPercent}%`,
-              }}
-            />
-          </div>
-        </section>
-
-        <section style={styles.readerCard}>
-          <div style={styles.readerTop}>
+          <section style={styles.courseHeader}>
             <div>
-              <div style={styles.readerLabel}>
-                MEMBER LEARNING
-              </div>
-
-              <h2 style={styles.readerTitle}>
-                {lesson.title}
-              </h2>
+              <div style={styles.eyebrow}>MEMBER COURSE</div>
+              <h1 style={styles.courseTitle}>{product.name}</h1>
+              <p style={styles.courseSubtitle}>
+                Materi {currentIndex + 1} dari {allLessons.length} • {lesson.title}
+              </p>
             </div>
 
-            <div style={styles.secureBadge}>
-              ✓ Secure Access
+            <div style={styles.headerProgress}>
+              <strong>
+                {allLessons.length > 0
+                  ? Math.round(
+                      (allLessons.filter((item) => lessonCompleted(item.id)).length /
+                        allLessons.length) *
+                        100
+                    )
+                  : 0}
+                %
+              </strong>
+              <span>Course Progress</span>
             </div>
-          </div>
+          </section>
 
-          <div style={styles.readerDivider}></div>
+          <div style={styles.workspace}>
+            <section style={styles.viewerColumn}>
+              <div style={styles.lessonHeading}>
+                <div>
+                  <div style={styles.typeBadge}>
+                    {getTypeLabel(lesson.content_type)}
+                  </div>
+                  <h2 style={styles.lessonTitle}>{lesson.title}</h2>
+                </div>
 
-          <div style={styles.contentArea}>
-            {renderContent()}
-          </div>
-        </section>
-
-        <section
-          style={
-            isCompleted
-              ? styles.completedCard
-              : styles.actionCard
-          }
-        >
-          {isCompleted ? (
-            <>
-              <div style={styles.completeIcon}>
-                ✓
-              </div>
-
-              <div style={styles.actionInfo}>
-                <strong style={styles.actionTitle}>
-                  Materi Selesai
-                </strong>
-
-                <div style={styles.actionText}>
-                  Progress materi ini sudah tersimpan.
+                <div
+                  style={{
+                    ...styles.statusBadge,
+                    ...(isCompleted ? styles.statusDone : {}),
+                  }}
+                >
+                  {isCompleted ? '✓ Selesai' : 'Sedang Dipelajari'}
                 </div>
               </div>
 
-              <div style={styles.completedBadge}>
-                100%
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={styles.incompleteIcon}>
-                ○
+              <div style={styles.viewerCard}>
+                {renderContent()}
               </div>
 
-              <div style={styles.actionInfo}>
-                <strong style={styles.actionTitle}>
-                  Sudah selesai mempelajari materi ini?
-                </strong>
-
-                <div style={styles.actionText}>
-                  Tandai selesai agar progress belajar
-                  tersimpan ke akun Anda.
-                </div>
-              </div>
-
-              <button
-                onClick={markAsCompleted}
-                disabled={savingProgress}
-                style={{
-                  ...styles.completeButton,
-                  opacity: savingProgress ? 0.65 : 1,
-                  cursor: savingProgress
-                    ? 'wait'
-                    : 'pointer',
-                }}
+              <section
+                style={isCompleted ? styles.completedCard : styles.actionCard}
               >
-                {savingProgress
-                  ? 'Menyimpan...'
-                  : 'Tandai Selesai ✓'}
-              </button>
-            </>
-          )}
-        </section>
-
-        {successMessage && (
-          <div style={styles.successMessage}>
-            ✓ {successMessage}
-          </div>
-        )}
-
-        {progressError && (
-          <div style={styles.progressError}>
-            <strong>
-              Progress belum dapat disimpan.
-            </strong>
-
-            <div style={{ marginTop: 4 }}>
-              {progressError}
-            </div>
-          </div>
-        )}
-
-        {/* PREVIOUS / NEXT */}
-
-        <section style={styles.navigationSection}>
-          <div style={styles.navigationLabel}>
-            NAVIGASI MATERI
-          </div>
-
-          <div style={styles.navigationGrid}>
-            {previousLesson ? (
-              <button
-                onClick={() =>
-                  openLesson(previousLesson.id)
-                }
-                style={styles.navigationCard}
-              >
-                <div style={styles.navigationDirection}>
-                  ← MATERI SEBELUMNYA
+                <div style={isCompleted ? styles.completeIcon : styles.incompleteIcon}>
+                  {isCompleted ? '✓' : '○'}
                 </div>
 
-                <div style={styles.navigationTitle}>
-                  {previousLesson.title}
-                </div>
-              </button>
-            ) : (
-              <div style={styles.navigationDisabled}>
-                <div style={styles.navigationDirection}>
-                  ← MATERI SEBELUMNYA
+                <div style={styles.actionInfo}>
+                  <strong style={styles.actionTitle}>
+                    {isCompleted
+                      ? 'Materi sudah selesai'
+                      : 'Sudah selesai mempelajari materi ini?'}
+                  </strong>
+                  <div style={styles.actionText}>
+                    {isCompleted
+                      ? 'Progress materi ini sudah tersimpan di akun Anda.'
+                      : 'Tandai selesai agar progress pembelajaran tersimpan.'}
+                  </div>
                 </div>
 
-                <div style={styles.navigationDisabledText}>
-                  Ini materi pertama
+                {!isCompleted && (
+                  <button
+                    onClick={markAsCompleted}
+                    disabled={savingProgress}
+                    style={{
+                      ...styles.completeButton,
+                      opacity: savingProgress ? 0.65 : 1,
+                    }}
+                  >
+                    {savingProgress ? 'Menyimpan...' : 'Tandai Selesai ✓'}
+                  </button>
+                )}
+              </section>
+
+              {successMessage && (
+                <div style={styles.successMessage}>✓ {successMessage}</div>
+              )}
+
+              {progressError && (
+                <div style={styles.progressError}>{progressError}</div>
+              )}
+
+              <div style={styles.lessonNavigation}>
+                <button
+                  disabled={!previousLesson}
+                  onClick={() => previousLesson && openLesson(previousLesson.id)}
+                  style={{
+                    ...styles.navButton,
+                    opacity: previousLesson ? 1 : 0.45,
+                  }}
+                >
+                  ← Sebelumnya
+                </button>
+
+                <button
+                  disabled={!nextLesson}
+                  onClick={() => nextLesson && openLesson(nextLesson.id)}
+                  style={{
+                    ...styles.navButtonPrimary,
+                    opacity: nextLesson ? 1 : 0.45,
+                  }}
+                >
+                  Selanjutnya →
+                </button>
+              </div>
+            </section>
+
+            <aside style={styles.curriculum}>
+              <div style={styles.curriculumHead}>
+                <div>
+                  <div style={styles.eyebrow}>COURSE CONTENT</div>
+                  <h3 style={styles.curriculumTitle}>Daftar Materi</h3>
+                </div>
+                <span style={styles.lessonCount}>{allLessons.length} Materi</span>
+              </div>
+
+              <div style={styles.curriculumScroll}>
+                {curriculumGroups.map((section, sectionIndex) => (
+                  <div key={section.id} style={styles.moduleCard}>
+                    <div style={styles.moduleHeader}>
+                      <span style={styles.moduleNumber}>
+                        {String(sectionIndex + 1).padStart(2, '0')}
+                      </span>
+                      <div>
+                        <strong style={styles.moduleTitle}>{section.title}</strong>
+                        <span style={styles.moduleMeta}>
+                          {section.lessons.filter((item) => lessonCompleted(item.id)).length}/
+                          {section.lessons.length} selesai
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={styles.lessonList}>
+                      {section.lessons.map((item, lessonIndex) => {
+                        const active = item.id === lesson.id
+                        const done = lessonCompleted(item.id)
+
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => openLesson(item.id)}
+                            style={{
+                              ...styles.curriculumLesson,
+                              ...(active ? styles.curriculumLessonActive : {}),
+                            }}
+                          >
+                            <span
+                              style={{
+                                ...styles.lessonState,
+                                ...(done ? styles.lessonStateDone : {}),
+                              }}
+                            >
+                              {done ? '✓' : lessonIndex + 1}
+                            </span>
+
+                            <span style={styles.curriculumLessonText}>
+                              <strong>{item.title}</strong>
+                              <small>{getTypeLabel(item.content_type).replace(' LESSON', '')}</small>
+                            </span>
+
+                            {active && <span style={styles.playingDot}>●</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {ungroupedLessons.length > 0 && (
+                  <div style={styles.moduleCard}>
+                    <div style={styles.moduleHeader}>
+                      <span style={styles.moduleNumber}>+</span>
+                      <div>
+                        <strong style={styles.moduleTitle}>Materi Lainnya</strong>
+                        <span style={styles.moduleMeta}>
+                          {ungroupedLessons.length} materi
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={styles.lessonList}>
+                      {ungroupedLessons.map((item, lessonIndex) => {
+                        const active = item.id === lesson.id
+                        const done = lessonCompleted(item.id)
+
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => openLesson(item.id)}
+                            style={{
+                              ...styles.curriculumLesson,
+                              ...(active ? styles.curriculumLessonActive : {}),
+                            }}
+                          >
+                            <span
+                              style={{
+                                ...styles.lessonState,
+                                ...(done ? styles.lessonStateDone : {}),
+                              }}
+                            >
+                              {done ? '✓' : lessonIndex + 1}
+                            </span>
+                            <span style={styles.curriculumLessonText}>
+                              <strong>{item.title}</strong>
+                              <small>{getTypeLabel(item.content_type).replace(' LESSON', '')}</small>
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={styles.protectedBox}>
+                <span>🔒</span>
+                <div>
+                  <strong>Protected Member Content</strong>
+                  <p>
+                    Materi ditampilkan di Member Area setelah autentikasi dan
+                    pengecekan akses.
+                  </p>
                 </div>
               </div>
-            )}
-
-            {nextLesson ? (
-              <button
-                onClick={() =>
-                  openLesson(nextLesson.id)
-                }
-                style={{
-                  ...styles.navigationCard,
-                  textAlign: 'right',
-                }}
-              >
-                <div style={styles.navigationDirection}>
-                  MATERI BERIKUTNYA →
-                </div>
-
-                <div style={styles.navigationTitle}>
-                  {nextLesson.title}
-                </div>
-              </button>
-            ) : (
-              <div
-                style={{
-                  ...styles.navigationDisabled,
-                  textAlign: 'right',
-                }}
-              >
-                <div style={styles.navigationDirection}>
-                  MATERI BERIKUTNYA →
-                </div>
-
-                <div style={styles.navigationDisabledText}>
-                  Semua materi sudah dijelajahi
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <div style={styles.bottomNavigation}>
-          <button
-            onClick={() =>
-              router.push(`/member/product/${slug}`)
-            }
-            style={styles.secondaryButton}
-          >
-            ← Daftar Materi
-          </button>
-
-          <div style={styles.bottomStatus}>
-            <span
-              style={{
-                ...styles.bottomStatusDot,
-                background: isCompleted
-                  ? '#22c55e'
-                  : '#6366f1',
-              }}
-            ></span>
-
-            {isCompleted
-              ? 'Progress tersimpan'
-              : 'Progress belum selesai'}
+            </aside>
           </div>
         </div>
-
-        <div style={styles.securityBox}>
-          <div style={styles.securityIcon}>
-            ✓
-          </div>
-
-          <div>
-            <strong>
-              Protected Member Content
-            </strong>
-
-            <div style={styles.securityText}>
-              Content dan progress dilindungi
-              authenticated Supabase access dan Row
-              Level Security.
-            </div>
-          </div>
-        </div>
-      </div>
       </main>
     </MemberShell>
   )
@@ -854,621 +819,243 @@ export default function LessonReaderPage() {
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
-    padding: '28px 18px 70px',
-    color: '#fff',
+    padding: '26px 24px 70px',
+    color: '#172033',
     background:
-      'radial-gradient(circle at 10% 0%, #172554 0%, #070b18 38%, #030712 100%)',
+      'radial-gradient(circle at 10% 0%, rgba(191,219,254,.70), transparent 30%), radial-gradient(circle at 88% 12%, rgba(233,213,255,.72), transparent 34%), linear-gradient(135deg,#f7fbff,#faf7ff 55%,#fff8fc)',
     fontFamily:
       'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
-
-  container: {
-    width: '100%',
-    maxWidth: 1050,
-    margin: '0 auto',
-  },
-
+  container: { width: '100%', maxWidth: 1320, margin: '0 auto' },
   centerPage: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    color: '#fff',
-    background:
-      'radial-gradient(circle at top, #172554, #030712 65%)',
+    minHeight: '100vh', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', padding: 20, background: '#f7f8ff',
     fontFamily: 'Inter, system-ui, sans-serif',
   },
-
   loadingCard: {
-    width: '100%',
-    maxWidth: 460,
-    padding: 38,
-    textAlign: 'center',
-    borderRadius: 26,
-    border: '1px solid rgba(255,255,255,.12)',
-    background:
-      'linear-gradient(145deg, rgba(30,64,175,.28), rgba(88,28,135,.18))',
+    width: '100%', maxWidth: 460, padding: 38, textAlign: 'center',
+    borderRadius: 26, border: '1px solid #e5e7eb', background: '#fff',
   },
-
   loadingLogo: {
-    width: 56,
-    height: 56,
-    margin: '0 auto 18px',
-    borderRadius: 18,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: 24,
-    fontWeight: 900,
-    background:
-      'linear-gradient(135deg, #2563eb, #7c3aed)',
+    width: 56, height: 56, margin: '0 auto 18px', borderRadius: 18,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 24, fontWeight: 900, color: '#fff',
+    background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
   },
-
   errorCard: {
-    width: '100%',
-    maxWidth: 520,
-    padding: 38,
-    textAlign: 'center',
-    borderRadius: 26,
-    border: '1px solid rgba(248,113,113,.2)',
-    background:
-      'linear-gradient(145deg, rgba(127,29,29,.26), rgba(30,41,59,.4))',
+    width: '100%', maxWidth: 520, padding: 38, textAlign: 'center',
+    borderRadius: 26, border: '1px solid #fecaca', background: '#fff',
   },
-
   errorBadge: {
-    display: 'inline-block',
-    padding: '6px 11px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 900,
-    color: '#fca5a5',
-    background: 'rgba(239,68,68,.12)',
+    display: 'inline-block', padding: '6px 11px', borderRadius: 999,
+    fontSize: 12, fontWeight: 900, color: '#dc2626', background: '#fee2e2',
   },
-
-  muted: {
-    margin: 0,
-    color: '#94a3b8',
-    lineHeight: 1.75,
-  },
-
+  muted: { margin: 0, color: '#64748b', fontSize: 14, lineHeight: 1.7 },
   primaryButton: {
-    marginTop: 18,
-    padding: '12px 18px',
-    border: 0,
-    borderRadius: 12,
-    cursor: 'pointer',
-    color: '#fff',
-    fontWeight: 800,
-    background:
-      'linear-gradient(135deg, #2563eb, #7c3aed)',
+    marginTop: 20, border: 0, borderRadius: 12, padding: '12px 18px',
+    color: '#fff', fontWeight: 800, cursor: 'pointer',
+    background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
   },
-
-  topBar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 14,
-    marginBottom: 18,
+  courseTopbar: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    gap: 16, marginBottom: 18,
   },
-
   backButton: {
-    padding: '10px 14px',
-    borderRadius: 12,
-    cursor: 'pointer',
-    fontWeight: 750,
-    color: '#cbd5e1',
-    border: '1px solid rgba(255,255,255,.1)',
-    background: 'rgba(15,23,42,.6)',
+    border: '1px solid rgba(99,102,241,.16)', borderRadius: 12,
+    padding: '11px 15px', background: 'rgba(255,255,255,.76)',
+    color: '#334155', fontWeight: 800, cursor: 'pointer',
   },
-
-  userBox: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    color: '#94a3b8',
-    fontSize: 13,
+  courseIdentity: {
+    display: 'flex', alignItems: 'center', gap: 8, color: '#64748b',
+    fontSize: 13, fontWeight: 700,
   },
-
-  onlineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: '50%',
-    background: '#22c55e',
+  onlineDot: { width: 8, height: 8, borderRadius: 99, background: '#22c55e' },
+  courseHeader: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    gap: 24, padding: '24px 28px', marginBottom: 20, borderRadius: 24,
+    border: '1px solid rgba(99,102,241,.13)',
+    background: 'linear-gradient(120deg,rgba(219,234,254,.88),rgba(255,255,255,.78),rgba(243,232,255,.88))',
+    boxShadow: '0 18px 45px rgba(79,70,229,.08)',
   },
-
-  breadcrumb: {
-    display: 'flex',
-    gap: 9,
-    flexWrap: 'wrap',
-    marginBottom: 14,
-    color: '#64748b',
-    fontSize: 14,
+  eyebrow: {
+    color: '#6366f1', fontSize: 11, lineHeight: 1.2, fontWeight: 900,
+    letterSpacing: '1.5px',
   },
-
-  breadcrumbArrow: {
-    color: '#475569',
+  courseTitle: {
+    margin: '7px 0 5px', fontSize: 28, lineHeight: 1.08,
+    letterSpacing: '-.7px', color: '#172033',
   },
-
-  hero: {
-    position: 'relative',
-    overflow: 'hidden',
-    borderRadius: 28,
-    border: '1px solid rgba(255,255,255,.11)',
-    background:
-      'linear-gradient(135deg, rgba(30,64,175,.45), rgba(88,28,135,.38), rgba(15,23,42,.88))',
+  courseSubtitle: { margin: 0, color: '#64748b', fontSize: 13.5 },
+  headerProgress: {
+    minWidth: 130, textAlign: 'right', display: 'flex', flexDirection: 'column',
   },
-
-  heroGlowOne: {
-    position: 'absolute',
-    width: 300,
-    height: 300,
-    top: -190,
-    right: -40,
-    borderRadius: '50%',
-    background: 'rgba(59,130,246,.28)',
-    filter: 'blur(25px)',
+  headerProgress: { minWidth: 130, textAlign: 'right' },
+  workspace: {
+    display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 370px',
+    gap: 20, alignItems: 'start',
   },
-
-  heroGlowTwo: {
-    position: 'absolute',
-    width: 250,
-    height: 250,
-    bottom: -200,
-    left: 80,
-    borderRadius: '50%',
-    background: 'rgba(168,85,247,.22)',
-    filter: 'blur(25px)',
+  viewerColumn: { minWidth: 0 },
+  lessonHeading: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+    gap: 18, marginBottom: 14,
   },
-
-  heroContent: {
-    position: 'relative',
-    padding: '38px 36px',
-  },
-
   typeBadge: {
-    display: 'inline-block',
-    padding: '7px 11px',
-    borderRadius: 999,
-    color: '#bfdbfe',
-    fontSize: 12,
-    fontWeight: 900,
-    letterSpacing: 1.4,
-    background: 'rgba(255,255,255,.08)',
+    display: 'inline-flex', padding: '6px 10px', borderRadius: 999,
+    background: '#eef2ff', color: '#6366f1', fontSize: 10.5,
+    fontWeight: 900, letterSpacing: '1px',
   },
-
-  title: {
-    margin: '15px 0 10px',
-    fontSize: 'clamp(29px, 5vw, 46px)',
-    lineHeight: 1.08,
+  lessonTitle: {
+    margin: '9px 0 0', fontSize: 27, lineHeight: 1.15,
+    letterSpacing: '-.6px', color: '#172033',
   },
-
-  lessonMeta: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 9,
-    color: '#94a3b8',
-    fontSize: 14,
+  statusBadge: {
+    padding: '7px 11px', borderRadius: 999, background: '#eef2ff',
+    color: '#6366f1', fontSize: 11, fontWeight: 900,
   },
-
-  dot: {
-    color: '#475569',
+  statusDone: { background: '#dcfce7', color: '#15803d' },
+  viewerCard: {
+    minHeight: 430, padding: 26, borderRadius: 22,
+    border: '1px solid rgba(99,102,241,.12)', background: 'rgba(255,255,255,.82)',
+    boxShadow: '0 18px 50px rgba(15,23,42,.06)',
   },
-
-  progressCard: {
-    marginTop: 18,
-    padding: '18px 20px',
-    borderRadius: 18,
-    border: '1px solid rgba(99,102,241,.15)',
-    background:
-      'linear-gradient(135deg, rgba(30,64,175,.16), rgba(88,28,135,.12), rgba(15,23,42,.78))',
-  },
-
-  progressHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 15,
-    marginBottom: 13,
-  },
-
-  progressLabel: {
-    color: '#818cf8',
-    fontSize: 12,
-    fontWeight: 900,
-    letterSpacing: 1.5,
-  },
-
-  progressStatus: {
-    marginTop: 4,
-    fontSize: 14,
-    fontWeight: 800,
-  },
-
-  progressPercent: {
-    fontSize: 25,
-    fontWeight: 900,
-  },
-
-  progressTrack: {
-    width: '100%',
-    height: 8,
-    overflow: 'hidden',
-    borderRadius: 999,
-    background: 'rgba(255,255,255,.07)',
-  },
-
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
-    background:
-      'linear-gradient(90deg, #2563eb, #7c3aed, #22c55e)',
-    transition: 'width .35s ease',
-  },
-
-  readerCard: {
-    marginTop: 18,
-    padding: '25px 26px 30px',
-    borderRadius: 24,
-    border: '1px solid rgba(255,255,255,.09)',
-    background:
-      'linear-gradient(145deg, rgba(30,41,59,.82), rgba(15,23,42,.92))',
-  },
-
-  readerTop: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 15,
-  },
-
-  readerLabel: {
-    color: '#818cf8',
-    fontSize: 12,
-    fontWeight: 900,
-    letterSpacing: 1.5,
-  },
-
-  readerTitle: {
-    margin: '5px 0 0',
-    fontSize: 22,
-  },
-
-  secureBadge: {
-    padding: '7px 10px',
-    borderRadius: 999,
-    color: '#86efac',
-    fontSize: 12,
-    fontWeight: 850,
-    background: 'rgba(34,197,94,.1)',
-  },
-
-  readerDivider: {
-    height: 1,
-    margin: '20px 0 26px',
-    background: 'rgba(255,255,255,.07)',
-  },
-
-  contentArea: {
-    minHeight: 180,
-  },
-
   textContent: {
-    color: '#dbe4f0',
-    fontSize: 16,
-    lineHeight: 1.9,
-    whiteSpace: 'pre-wrap',
-  },
-
-  htmlBox: {
-    color: '#dbe4f0',
+    whiteSpace: 'pre-wrap', color: '#334155', fontSize: 15,
     lineHeight: 1.85,
   },
-
-  htmlContent: {
-    fontSize: 16,
-  },
-
+  htmlBox: { color: '#334155' },
+  htmlContent: { fontSize: 15, lineHeight: 1.8 },
   videoWrapper: {
-    position: 'relative',
-    width: '100%',
-    paddingTop: '56.25%',
-    overflow: 'hidden',
-    borderRadius: 18,
-    background: '#000',
+    position: 'relative', width: '100%', paddingTop: '56.25%',
+    overflow: 'hidden', borderRadius: 18, background: '#020617',
   },
-
   videoIframe: {
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    border: 0,
+    position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0,
   },
-
   videoPlaceholder: {
-    padding: '48px 22px',
-    textAlign: 'center',
-    borderRadius: 20,
-    background:
-      'linear-gradient(135deg, rgba(30,64,175,.18), rgba(88,28,135,.14))',
+    padding: '55px 24px', textAlign: 'center', borderRadius: 18,
+    background: 'linear-gradient(135deg,#eef2ff,#f5f3ff)',
   },
-
   playIcon: {
-    width: 66,
-    height: 66,
-    margin: '0 auto 17px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '50%',
-    background:
-      'linear-gradient(135deg, #2563eb, #7c3aed)',
+    width: 64, height: 64, margin: '0 auto 16px', borderRadius: 999,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#fff', fontSize: 24, background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
   },
-
-  videoDescription: {
-    marginTop: 20,
-    color: '#cbd5e1',
-    lineHeight: 1.8,
-  },
-
+  videoDescription: { marginTop: 18, color: '#475569', fontSize: 14.5, lineHeight: 1.75 },
   resourceBox: {
-    padding: '42px 24px',
-    textAlign: 'center',
-    borderRadius: 20,
-    background:
-      'linear-gradient(135deg, rgba(37,99,235,.14), rgba(124,58,237,.12))',
+    padding: '50px 28px', textAlign: 'center', borderRadius: 18,
+    background: 'linear-gradient(135deg,#eff6ff,#faf5ff)',
   },
-
   resourceIcon: {
-    width: 62,
-    height: 62,
-    margin: '0 auto 18px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 18,
-    fontSize: 27,
-    background:
-      'linear-gradient(135deg, rgba(37,99,235,.25), rgba(124,58,237,.25))',
+    width: 58, height: 58, margin: '0 auto 14px', borderRadius: 18,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#fff', fontSize: 24, background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
   },
-
   externalButton: {
-    display: 'inline-block',
-    marginTop: 20,
-    padding: '12px 18px',
-    borderRadius: 12,
-    color: '#fff',
-    textDecoration: 'none',
-    fontWeight: 800,
-    background:
-      'linear-gradient(135deg, #2563eb, #7c3aed)',
+    display: 'inline-flex', marginTop: 18, padding: '11px 16px',
+    borderRadius: 12, color: '#fff', textDecoration: 'none', fontWeight: 800,
+    background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
   },
-
-  noLink: {
-    marginTop: 18,
-    color: '#64748b',
-  },
-
+  noLink: { marginTop: 16, color: '#94a3b8', fontSize: 13 },
   actionCard: {
-    marginTop: 18,
-    padding: 18,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 14,
-    flexWrap: 'wrap',
-    borderRadius: 18,
-    background:
-      'linear-gradient(135deg, rgba(30,64,175,.18), rgba(88,28,135,.12))',
+    display: 'flex', alignItems: 'center', gap: 13, marginTop: 14,
+    padding: 16, borderRadius: 18, border: '1px solid #e0e7ff',
+    background: 'rgba(255,255,255,.78)',
   },
-
   completedCard: {
-    marginTop: 18,
-    padding: 18,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 14,
-    flexWrap: 'wrap',
-    borderRadius: 18,
-    background:
-      'linear-gradient(135deg, rgba(6,78,59,.30), rgba(15,23,42,.72))',
+    display: 'flex', alignItems: 'center', gap: 13, marginTop: 14,
+    padding: 16, borderRadius: 18, border: '1px solid #bbf7d0',
+    background: 'rgba(240,253,244,.88)',
   },
-
   incompleteIcon: {
-    width: 44,
-    height: 44,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    fontSize: 25,
-    color: '#a5b4fc',
-    background: 'rgba(99,102,241,.13)',
+    width: 38, height: 38, borderRadius: 12, display: 'flex',
+    alignItems: 'center', justifyContent: 'center', color: '#6366f1',
+    background: '#eef2ff', fontSize: 22,
   },
-
   completeIcon: {
-    width: 44,
-    height: 44,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    color: '#86efac',
-    fontWeight: 900,
-    background: 'rgba(34,197,94,.13)',
+    width: 38, height: 38, borderRadius: 12, display: 'flex',
+    alignItems: 'center', justifyContent: 'center', color: '#15803d',
+    background: '#dcfce7', fontSize: 18, fontWeight: 900,
   },
-
-  actionInfo: {
-    flex: 1,
-    minWidth: 210,
-  },
-
-  actionTitle: {
-    fontSize: 14,
-  },
-
-  actionText: {
-    marginTop: 4,
-    color: '#94a3b8',
-    fontSize: 14,
-  },
-
+  actionInfo: { flex: 1, minWidth: 0 },
+  actionTitle: { display: 'block', color: '#172033', fontSize: 13.5 },
+  actionText: { marginTop: 3, color: '#64748b', fontSize: 12.5, lineHeight: 1.5 },
   completeButton: {
-    padding: '12px 17px',
-    border: 0,
-    borderRadius: 12,
-    color: '#fff',
-    fontWeight: 850,
-    background:
-      'linear-gradient(135deg, #2563eb, #7c3aed)',
+    border: 0, borderRadius: 12, padding: '11px 15px', color: '#fff',
+    fontSize: 13, fontWeight: 900, cursor: 'pointer',
+    background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
   },
-
-  completedBadge: {
-    padding: '9px 13px',
-    borderRadius: 999,
-    color: '#86efac',
-    fontWeight: 900,
-    background: 'rgba(34,197,94,.1)',
-  },
-
   successMessage: {
-    marginTop: 12,
-    padding: '12px 15px',
-    borderRadius: 12,
-    color: '#86efac',
-    background: 'rgba(6,78,59,.22)',
+    marginTop: 12, padding: '11px 14px', borderRadius: 12,
+    color: '#15803d', background: '#dcfce7', fontSize: 13, fontWeight: 800,
   },
-
   progressError: {
-    marginTop: 12,
-    padding: '12px 15px',
-    borderRadius: 12,
-    color: '#fca5a5',
-    background: 'rgba(127,29,29,.2)',
+    marginTop: 12, padding: '11px 14px', borderRadius: 12,
+    color: '#b91c1c', background: '#fee2e2', fontSize: 13,
   },
-
-  navigationSection: {
-    marginTop: 28,
+  lessonNavigation: {
+    display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 14,
   },
-
-  navigationLabel: {
-    marginBottom: 10,
-    color: '#818cf8',
-    fontSize: 12,
-    fontWeight: 900,
-    letterSpacing: 1.5,
+  navButton: {
+    border: '1px solid #e2e8f0', borderRadius: 12, padding: '11px 15px',
+    background: '#fff', color: '#334155', fontWeight: 800, cursor: 'pointer',
   },
-
-  navigationGrid: {
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(auto-fit, minmax(260px, 1fr))',
-    gap: 12,
+  navButtonPrimary: {
+    border: 0, borderRadius: 12, padding: '11px 15px', color: '#fff',
+    fontWeight: 800, cursor: 'pointer',
+    background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
   },
-
-  navigationCard: {
-    minHeight: 105,
-    padding: 18,
-    textAlign: 'left',
-    cursor: 'pointer',
-    color: '#fff',
-    borderRadius: 18,
-    border: '1px solid rgba(99,102,241,.17)',
-    background:
-      'linear-gradient(135deg, rgba(37,99,235,.20), rgba(124,58,237,.14), rgba(15,23,42,.82))',
+  curriculum: {
+    position: 'sticky', top: 18, overflow: 'hidden', borderRadius: 22,
+    border: '1px solid rgba(99,102,241,.13)', background: 'rgba(255,255,255,.86)',
+    boxShadow: '0 18px 50px rgba(15,23,42,.07)',
   },
-
-  navigationDisabled: {
-    minHeight: 105,
-    padding: 18,
-    borderRadius: 18,
-    border: '1px solid rgba(255,255,255,.06)',
-    background:
-      'linear-gradient(135deg, rgba(30,41,59,.45), rgba(15,23,42,.65))',
+  curriculumHead: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    gap: 12, padding: '20px 20px 15px', borderBottom: '1px solid #eef2f7',
   },
-
-  navigationDirection: {
-    color: '#818cf8',
-    fontSize: 12,
-    fontWeight: 900,
-    letterSpacing: 1.1,
+  curriculumTitle: { margin: '5px 0 0', fontSize: 19, color: '#172033' },
+  lessonCount: {
+    padding: '6px 9px', borderRadius: 999, background: '#eef2ff',
+    color: '#6366f1', fontSize: 10.5, fontWeight: 900,
   },
-
-  navigationTitle: {
-    marginTop: 9,
-    fontSize: 15,
-    fontWeight: 850,
-    lineHeight: 1.4,
+  curriculumScroll: { maxHeight: '66vh', overflowY: 'auto', padding: 12 },
+  moduleCard: {
+    overflow: 'hidden', marginBottom: 10, borderRadius: 16,
+    border: '1px solid #edf0f6', background: '#fbfcff',
   },
-
-  navigationDisabledText: {
-    marginTop: 9,
-    color: '#475569',
-    fontSize: 14,
-    fontWeight: 700,
+  moduleHeader: {
+    display: 'flex', alignItems: 'center', gap: 10, padding: '12px 13px',
+    background: 'linear-gradient(135deg,#f8faff,#f7f3ff)',
   },
-
-  bottomNavigation: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 14,
-    marginTop: 18,
+  moduleNumber: {
+    width: 34, height: 34, flex: '0 0 34px', borderRadius: 11,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#6366f1', background: '#e0e7ff', fontSize: 11, fontWeight: 900,
   },
-
-  secondaryButton: {
-    padding: '11px 15px',
-    cursor: 'pointer',
-    borderRadius: 12,
-    color: '#cbd5e1',
-    fontWeight: 750,
-    border: '1px solid rgba(255,255,255,.1)',
-    background: 'rgba(15,23,42,.65)',
+  moduleTitle: { display: 'block', color: '#253047', fontSize: 13.5 },
+  moduleMeta: { display: 'block', marginTop: 2, color: '#94a3b8', fontSize: 10.5 },
+  lessonList: { padding: 6 },
+  curriculumLesson: {
+    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+    padding: '10px 9px', margin: 0, border: 0, borderRadius: 12,
+    textAlign: 'left', background: 'transparent', color: '#334155', cursor: 'pointer',
   },
-
-  bottomStatus: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    color: '#64748b',
-    fontSize: 13,
+  curriculumLessonActive: {
+    background: 'linear-gradient(135deg,#eef2ff,#f5f3ff)',
+    boxShadow: 'inset 0 0 0 1px rgba(99,102,241,.14)',
   },
-
-  bottomStatusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: '50%',
+  lessonState: {
+    width: 28, height: 28, flex: '0 0 28px', borderRadius: 9,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#64748b', background: '#f1f5f9', fontSize: 10.5, fontWeight: 900,
   },
-
-  securityBox: {
-    marginTop: 26,
-    padding: 16,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    borderRadius: 17,
-    background:
-      'linear-gradient(135deg, rgba(6,78,59,.25), rgba(15,23,42,.62))',
+  lessonStateDone: { color: '#15803d', background: '#dcfce7' },
+  curriculumLessonText: {
+    minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 2,
   },
-
-  securityIcon: {
-    width: 36,
-    height: 36,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    color: '#86efac',
-    fontWeight: 900,
-    background: 'rgba(34,197,94,.12)',
-  },
-
-  securityText: {
-    marginTop: 3,
-    color: '#94a3b8',
-    fontSize: 14,
+  playingDot: { color: '#6366f1', fontSize: 10 },
+  protectedBox: {
+    display: 'flex', gap: 10, margin: '0 12px 12px', padding: 12,
+    borderRadius: 14, background: '#f8fafc', color: '#475569', fontSize: 11.5,
   },
 }
