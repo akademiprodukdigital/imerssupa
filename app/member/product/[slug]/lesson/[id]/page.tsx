@@ -887,9 +887,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   courseSubtitle: { margin: 0, color: '#64748b', fontSize: 13.5 },
   headerProgress: {
-    minWidth: 130, textAlign: 'right', display: 'flex', flexDirection: 'column',
+    minWidth: 130,
+    textAlign: 'right',
+    display: 'flex',
+    flexDirection: 'column',
   },
-  headerProgress: { minWidth: 130, textAlign: 'right' },
   workspace: {
     display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 370px',
     gap: 20, alignItems: 'start',
