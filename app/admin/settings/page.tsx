@@ -147,7 +147,7 @@ export default function SystemSettingsPage() {
           <div className="sidebar-bottom">
             <button
               className="account-card"
-              onClick={() => router.push('/admin/profile')}
+              onClick={() => router.push('/admin?profile=1')}
             >
               <Avatar
                 url={profile?.avatar_url}
@@ -627,7 +627,7 @@ function Navigation({
       <button
         className="menu-item"
         onClick={() =>
-          go('/admin/profile')
+          go('/admin?profile=1')
         }
       >
         <i>◉</i>
