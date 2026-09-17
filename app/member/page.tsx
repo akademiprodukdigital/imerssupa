@@ -462,26 +462,24 @@ export default function MemberDashboard() {
   }
 
   function continueLearning() {
-    if (!continueProduct) {
-      if (productInfos[0]) {
-        router.push(
-          `/member/product/${productInfos[0].slug}`
-        )
-      }
-
-      return
-    }
-
-    if (continueLesson) {
+    if (continueProduct && continueLesson) {
       router.push(
         `/member/product/${continueProduct.slug}/lesson/${continueLesson.id}`
       )
       return
     }
 
-    router.push(
-      `/member/product/${continueProduct.slug}`
+    const fallbackProduct = productInfos.find(
+      (item) => item.lessons.length > 0
     )
+
+    const fallbackLesson = fallbackProduct?.lessons[0]
+
+    if (fallbackProduct && fallbackLesson) {
+      router.push(
+        `/member/product/${fallbackProduct.slug}/lesson/${fallbackLesson.id}`
+      )
+    }
   }
 
   if (loading) {
