@@ -1917,6 +1917,27 @@ export default function AdminPaymentsPage(){
  </div>
 }
 
+function Brand() {
+  return (
+    <div className="brand">
+      <div className="brand-logo">
+        S
+      </div>
+
+      <div>
+        <strong>
+          iMersSUPA
+        </strong>
+
+        <span>
+          ADMIN CONTROL
+        </span>
+      </div>
+    </div>
+  )
+}
+
+
 function Menu({
   isSuperAdmin,
   router,
