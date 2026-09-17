@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
-import ThemeSwitcher from '../../components/ThemeSwitcher'
+import AdminShell from '../../components/AdminShell'
 
 type Profile = {
   id: string
@@ -72,11 +72,7 @@ export default function AdminDashboard() {
   const [error, setError] =
     useState('')
 
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false)
 
-  const [profileOpen, setProfileOpen] =
-    useState(false)
 
   const [search, setSearch] =
     useState('')
@@ -84,12 +80,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadDashboard()
 
-    if (
-      typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).get('profile') === '1'
-    ) {
-      setProfileOpen(true)
-    }
   }, [])
 
   async function loadDashboard() {
@@ -237,12 +227,6 @@ export default function AdminDashboard() {
     setLoading(false)
   }
 
-  async function logout() {
-    await supabase.auth.signOut()
-
-    router.replace('/login')
-    router.refresh()
-  }
 
   function greeting() {
     const hour =
@@ -268,15 +252,6 @@ export default function AdminDashboard() {
     currentEmail.split('@')[0] ||
     'Administrator'
 
-  const initials =
-    displayName
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((item) =>
-        item.charAt(0).toUpperCase()
-      )
-      .join('') || 'A'
 
   const isSuperAdmin =
     currentUser?.role ===
@@ -354,376 +329,31 @@ export default function AdminDashboard() {
         .slice(0, 5)
     }, [products])
 
-  const searchResults =
-    useMemo(() => {
-      const keyword =
-        search
-          .trim()
-          .toLowerCase()
-
-      if (!keyword) {
-        return []
-      }
-
-      const memberResults =
-        members
-          .filter((member) =>
-            (
-              member.full_name ||
-              ''
-            )
-              .toLowerCase()
-              .includes(keyword)
-          )
-          .slice(0, 4)
-          .map((member) => ({
-            id: member.id,
-            title:
-              member.full_name ||
-              'Member',
-            subtitle: 'Member',
-          }))
-
-      const productResults =
-        products
-          .filter((product) =>
-            product.name
-              .toLowerCase()
-              .includes(keyword)
-          )
-          .slice(0, 4)
-          .map((product) => ({
-            id: product.id,
-            title: product.name,
-            subtitle: 'Produk',
-          }))
-
-      const contentResults =
-        contents
-          .filter((content) =>
-            content.title
-              .toLowerCase()
-              .includes(keyword)
-          )
-          .slice(0, 4)
-          .map((content) => ({
-            id: content.id,
-            title: content.title,
-            subtitle: 'Materi',
-          }))
-
-      return [
-        ...memberResults,
-        ...productResults,
-        ...contentResults,
-      ].slice(0, 7)
-    }, [
-      search,
-      members,
-      products,
-      contents,
-    ])
 
   if (loading) {
     return (
-      <>
-        <main className="admin-loading">
-          <ThemeSwitcher />
-
-          <div className="loading-box">
-            <div className="logo">
-              S
+      <AdminShell>
+        <div className="content">
+          <section className="welcome">
+            <div>
+              <div className="eyebrow">ADMIN CONTROL CENTER</div>
+              <h1>Menyiapkan Dashboard...</h1>
+              <p>Memuat data member, produk, materi dan akses digital iMersSUPA.</p>
             </div>
-
-            <h2>
-              iMersSUPA
-            </h2>
-
-            <p>
-              Menyiapkan Admin
-              Dashboard...
-            </p>
-
-            <div className="loader">
-              <span />
-            </div>
-          </div>
-        </main>
-
-        <Styles />
-      </>
+          </section>
+        </div>
+      </AdminShell>
     )
   }
 
   return (
     <>
-      <div className="admin-shell">
-
-        <ThemeSwitcher />
-
-        {/* =========================================
-            DESKTOP SIDEBAR
-        ========================================= */}
-
-        <aside className="sidebar">
-
-          <div>
-            <Brand />
-
-            <div className="role-card">
-              <div className="role-icon">
-                {isSuperAdmin
-                  ? '★'
-                  : '◆'}
-              </div>
-
-              <div>
-                <span>
-                  LOGGED IN AS
-                </span>
-
-                <strong>
-                  {isSuperAdmin
-                    ? 'Super Admin'
-                    : 'Administrator'}
-                </strong>
-              </div>
-            </div>
-
-            <Menu
-              isSuperAdmin={
-                isSuperAdmin
-              }
-              router={router}
-              onProfile={() =>
-                setProfileOpen(true)
-              }
-            />
-          </div>
-
-          <div className="sidebar-bottom">
-
-            <button
-              className="sidebar-profile"
-              onClick={() =>
-                setProfileOpen(true)
-              }
-            >
-              <Avatar
-                url={
-                  currentUser
-                    ?.avatar_url
-                }
-                initials={initials}
-              />
-
-              <span>
-                <strong>
-                  {displayName}
-                </strong>
-
-                <small>
-                  {isSuperAdmin
-                    ? 'Super Admin'
-                    : 'Admin'}
-                </small>
-              </span>
-            </button>
-
-            <button
-              className="logout"
-              onClick={logout}
-            >
-              ↗ Keluar
-            </button>
-
-          </div>
-        </aside>
-
-        {/* =========================================
-            MOBILE SIDEBAR
-        ========================================= */}
-
-        {sidebarOpen && (
-          <div
-            className="mobile-overlay"
-            onClick={() =>
-              setSidebarOpen(false)
-            }
-          >
-            <aside
-              className="mobile-sidebar"
-              onClick={(event) =>
-                event.stopPropagation()
-              }
-            >
-              <div className="mobile-head">
-                <Brand />
-
-                <button
-                  onClick={() =>
-                    setSidebarOpen(
-                      false
-                    )
-                  }
-                >
-                  ×
-                </button>
-              </div>
-
-              <Menu
-                isSuperAdmin={
-                  isSuperAdmin
-                }
-                router={router}
-                onNavigate={() =>
-                  setSidebarOpen(
-                    false
-                  )
-                }
-              />
-
-              <button
-                className="mobile-logout"
-                onClick={logout}
-              >
-                Keluar dari Akun
-              </button>
-            </aside>
-          </div>
-        )}
-
-        {/* =========================================
-            CONTENT
-        ========================================= */}
-
-        <main className="main">
-
-          {/* TOPBAR */}
-
-          <header className="topbar">
-
-            <div className="mobile-brand">
-              <button
-                className="mobile-menu"
-                onClick={() =>
-                  setSidebarOpen(true)
-                }
-              >
-                ☰
-              </button>
-
-              <strong>
-                iMersSUPA
-              </strong>
-            </div>
-
-            <div className="search">
-              <span>⌕</span>
-
-              <input
-                value={search}
-                onChange={(event) =>
-                  setSearch(
-                    event.target.value
-                  )
-                }
-                placeholder="Cari member, produk atau materi..."
-              />
-
-              {search && (
-                <button
-                  className="search-clear"
-                  onClick={() =>
-                    setSearch('')
-                  }
-                >
-                  ×
-                </button>
-              )}
-
-              {search && (
-                <div className="search-results">
-                  {searchResults
-                    .length > 0 ? (
-                    searchResults.map(
-                      (result) => (
-                        <div
-                          className="search-result"
-                          key={`${result.subtitle}-${result.id}`}
-                        >
-                          <span className="result-icon">
-                            →
-                          </span>
-
-                          <div>
-                            <strong>
-                              {
-                                result.title
-                              }
-                            </strong>
-
-                            <small>
-                              {
-                                result.subtitle
-                              }
-                            </small>
-                          </div>
-                        </div>
-                      )
-                    )
-                  ) : (
-                    <div className="no-search">
-                      Tidak ada hasil.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="top-actions">
-
-              <button
-                className="notification"
-                title="Notification Center"
-              >
-                ♢
-                <i />
-              </button>
-
-              <button
-                className="profile-button"
-                onClick={() =>
-                  setProfileOpen(true)
-                }
-              >
-                <Avatar
-                  url={
-                    currentUser
-                      ?.avatar_url
-                  }
-                  initials={
-                    initials
-                  }
-                />
-
-                <span>
-                  <strong>
-                    {displayName}
-                  </strong>
-
-                  <small>
-                    {isSuperAdmin
-                      ? 'Super Admin'
-                      : 'Admin'}
-                  </small>
-                </span>
-              </button>
-
-            </div>
-          </header>
-
-          <div className="content">
+      <AdminShell
+        searchValue={search}
+        onSearch={setSearch}
+        searchPlaceholder="Cari member, produk atau materi..."
+      >
+        <div className="content">
 
             {/* =====================================
                 WELCOME
@@ -1231,128 +861,8 @@ export default function AdminDashboard() {
               </span>
             </footer>
 
-          </div>
-        </main>
-      </div>
-
-      {/* =========================================
-          PROFILE DRAWER
-      ========================================= */}
-
-      {profileOpen && (
-        <div
-          className="profile-overlay"
-          onClick={() =>
-            setProfileOpen(false)
-          }
-        >
-          <aside
-            className="profile-drawer"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
-            <div className="drawer-header">
-              <div>
-                <div className="eyebrow">
-                  ACCOUNT
-                </div>
-
-                <h2>
-                  Admin Profile
-                </h2>
-              </div>
-
-              <button
-                onClick={() =>
-                  setProfileOpen(
-                    false
-                  )
-                }
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="profile-hero">
-              <Avatar
-                url={
-                  currentUser
-                    ?.avatar_url
-                }
-                initials={initials}
-                large
-              />
-
-              <h3>
-                {displayName}
-              </h3>
-
-              <p>
-                {currentEmail}
-              </p>
-
-              <span>
-                {isSuperAdmin
-                  ? 'SUPER ADMIN'
-                  : 'ADMIN'}
-              </span>
-            </div>
-
-            <div className="profile-info">
-
-              <Info
-                label="Nama"
-                value={displayName}
-              />
-
-              <Info
-                label="Email"
-                value={currentEmail}
-              />
-
-              <Info
-                label="Role"
-                value={
-                  isSuperAdmin
-                    ? 'Super Admin'
-                    : 'Admin'
-                }
-              />
-
-              <Info
-                label="Status"
-                value={
-                  currentUser
-                    ?.status ||
-                  'active'
-                }
-              />
-
-            </div>
-
-            <button
-              className="password-button"
-              onClick={() =>
-                router.push(
-                  '/admin/change-password'
-                )
-              }
-            >
-              ◇ Ganti Password
-              <span>→</span>
-            </button>
-
-            <button
-              className="drawer-logout"
-              onClick={logout}
-            >
-              Keluar dari Akun
-            </button>
-
-          </aside>
         </div>
-      )}
+      </AdminShell>
 
       <Styles />
     </>
@@ -1362,261 +872,6 @@ export default function AdminDashboard() {
 /* ==========================================================
    COMPONENTS
 ========================================================== */
-
-function Brand() {
-  return (
-    <div className="brand">
-      <div className="brand-logo">
-        S
-      </div>
-
-      <div>
-        <strong>
-          iMersSUPA
-        </strong>
-
-        <span>
-          ADMIN CONTROL
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function Menu({
-  isSuperAdmin,
-  router,
-  onNavigate,
-  onProfile,
-}: {
-  isSuperAdmin: boolean
-  router: ReturnType<typeof useRouter>
-  onNavigate?: () => void
-  onProfile?: () => void
-}) {
-  function go(path: string) {
-    onNavigate?.()
-    router.push(path)
-  }
-
-  return (
-    <nav className="menu">
-
-      <div className="menu-title">
-        MAIN MENU
-      </div>
-
-      <button
-        className="menu-item active"
-        onClick={() =>
-          go('/admin')
-        }
-      >
-        <i>⌂</i>
-        Dashboard
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/members')
-        }
-      >
-        <i>◎</i>
-        Members
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/products')
-        }
-      >
-        <i>▣</i>
-        Products
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/content')
-        }
-      >
-        <i>▶</i>
-        Content
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/access')
-        }
-      >
-        <i>◇</i>
-        Member Access
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/progress')
-        }
-      >
-        <i>↗</i>
-        Progress
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/resources')
-        }
-      >
-        <i>◆</i>
-        Resources
-      </button>
-
-      <div className="menu-title second">
-        COMMERCE
-      </div>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/orders')
-        }
-      >
-        <i>▤</i>
-        Orders & Transactions
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/payments')
-        }
-      >
-        <i>◫</i>
-        Payments
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/affiliates')
-        }
-      >
-        <i>⌘</i>
-        Affiliate & Coupons
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/notifications')
-        }
-      >
-        <i>◌</i>
-        Notifications
-      </button>
-
-      {isSuperAdmin && (
-        <>
-          <div className="menu-title second">
-            SUPER ADMIN
-          </div>
-
-          <button
-            className="menu-item"
-            onClick={() =>
-              go(
-                '/admin/administrators'
-              )
-            }
-          >
-            <i>♛</i>
-            Administrators
-          </button>
-
-          <button
-            className="menu-item"
-            onClick={() =>
-              go('/admin/settings')
-            }
-          >
-            <i>⚙</i>
-            System Settings
-          </button>
-
-          <button
-            className="menu-item"
-            onClick={() =>
-              go('/admin/settings/commerce')
-            }
-          >
-            <i>◈</i>
-            Commerce Settings
-          </button>
-
-          <button
-            className="menu-item"
-            onClick={() =>
-              go('/admin/security')
-            }
-          >
-            <i>◇</i>
-            Security / Audit
-          </button>
-        </>
-      )}
-
-      <div className="menu-title second">
-        ACCOUNT
-      </div>
-
-      <button
-        className="menu-item"
-        onClick={() => {
-          onNavigate?.()
-          onProfile?.()
-        }}
-      >
-        <i>◉</i>
-        Profile
-      </button>
-
-    </nav>
-  )
-}
-
-function Avatar({
-  url,
-  initials,
-  large = false,
-}: {
-  url?: string | null
-  initials: string
-  large?: boolean
-}) {
-  return (
-    <div
-      className={
-        large
-          ? 'avatar avatar-large'
-          : 'avatar'
-      }
-    >
-      {url ? (
-        <img
-          src={url}
-          alt="Avatar"
-        />
-      ) : (
-        initials
-      )}
-    </div>
-  )
-}
 
 function Stat({
   icon,
@@ -1804,30 +1059,6 @@ function SuperCard({
     </button>
   )
 }
-
-function Info({
-  label,
-  value,
-}: {
-  label: string
-  value: string
-}) {
-  return (
-    <div className="info-row">
-      <span>
-        {label}
-      </span>
-
-      <strong>
-        {value}
-      </strong>
-    </div>
-  )
-}
-
-/* ==========================================================
-   STYLES
-========================================================== */
 
 function Styles() {
   return (
