@@ -75,7 +75,7 @@ export default function AdminPaymentsPage(){
               }
               router={router}
               onProfile={() =>
-                setProfileOpen(true)
+                router.push('/admin/profile')
               }
             />
           </div>
@@ -85,14 +85,11 @@ export default function AdminPaymentsPage(){
             <button
               className="sidebar-profile"
               onClick={() =>
-                setProfileOpen(true)
+                router.push('/admin/profile')
               }
             >
               <Avatar
-                url={
-                  currentUser
-                    ?.avatar_url
-                }
+                url={profile?.avatar_url}
                 initials={initials}
               />
 
@@ -120,61 +117,10 @@ export default function AdminPaymentsPage(){
         </aside>
 
         {/* =========================================
-            MOBILE SIDEBAR
-        ========================================= */}
-
-        {sidebarOpen && (
-          <div
-            className="mobile-overlay"
-            onClick={() =>
-              setSidebarOpen(false)
-            }
-          >
-            <aside
-              className="mobile-sidebar"
-              onClick={(event) =>
-                event.stopPropagation()
-              }
-            >
-              <div className="mobile-head">
-                <Brand />
-
-                <button
-                  onClick={() =>
-                    setSidebarOpen(
-                      false
-                    )
-                  }
-                >
-                  ×
-                </button>
-              </div>
-
-              <Menu
-                isSuperAdmin={
-                  isSuperAdmin
-                }
-                router={router}
-                onNavigate={() =>
-                  setSidebarOpen(
-                    false
-                  )
-                }
-              />
-
-              <button
-                className="mobile-logout"
-                onClick={logout}
-              >
-                Keluar dari Akun
-              </button>
-            </aside>
-          </div>
-        )}
-
-        {/* =========================================
             CONTENT
         ========================================= */}
+
+
 
   <main className="content"><header><div><span className="eyebrow">COMMERCE / PAYMENTS</span><h1>Payment Management</h1><p>Kelola transaksi pembayaran dan verifikasi bukti pembayaran pelanggan.</p></div><button className="refresh" onClick={()=>void loadData()} disabled={listLoading}>↻ Refresh</button></header>
   {error&&<div className="error"><span>⚠ {error}</span><button onClick={()=>setError('')}>×</button></div>}
