@@ -50,6 +50,7 @@ export default function LessonReaderPage() {
   const slug = params.slug as string
   const lessonId = params.id as string
 
+  const [activeLessonId, setActiveLessonId] = useState(lessonId)
   const [userId, setUserId] = useState('')
   const [email, setEmail] = useState('')
 
@@ -68,8 +69,9 @@ export default function LessonReaderPage() {
   const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
+    setActiveLessonId(lessonId)
     loadLesson()
-  }, [slug, lessonId])
+  }, [slug])
 
   async function loadLesson() {
     setLoading(true)
@@ -244,9 +246,9 @@ export default function LessonReaderPage() {
 
   const currentIndex = useMemo(() => {
     return allLessons.findIndex(
-      (item) => item.id === lessonId
+      (item) => item.id === activeLessonId
     )
-  }, [allLessons, lessonId])
+  }, [allLessons, activeLessonId])
 
   const previousLesson =
     currentIndex > 0
@@ -258,6 +260,37 @@ export default function LessonReaderPage() {
     currentIndex < allLessons.length - 1
       ? allLessons[currentIndex + 1]
       : null
+
+  useEffect(() => {
+    function handlePopState() {
+      const idFromUrl =
+        window.location.pathname.split('/').filter(Boolean).pop() ?? ''
+
+      const selectedLesson = allLessons.find(
+        (item) => item.id === idFromUrl
+      )
+
+      if (!selectedLesson) {
+        return
+      }
+
+      setActiveLessonId(selectedLesson.id)
+      setLesson(selectedLesson)
+      setProgress(
+        allProgress.find(
+          (row) => row.content_id === selectedLesson.id
+        ) ?? null
+      )
+      setProgressError('')
+      setSuccessMessage('')
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [allLessons, allProgress])
 
   async function markAsCompleted() {
     if (!userId || !lesson) return
@@ -316,9 +349,34 @@ export default function LessonReaderPage() {
   }
 
   function openLesson(id: string) {
-    router.push(
+    const selectedLesson = allLessons.find(
+      (item) => item.id === id
+    )
+
+    if (!selectedLesson || id === activeLessonId) {
+      return
+    }
+
+    setActiveLessonId(id)
+    setLesson(selectedLesson)
+    setProgress(
+      allProgress.find((row) => row.content_id === id) ?? null
+    )
+    setProgressError('')
+    setSuccessMessage('')
+
+    // Update URL without triggering a Next.js route transition.
+    // The Course Workspace stays mounted, so the viewer changes instantly.
+    window.history.pushState(
+      { lessonId: id },
+      '',
       `/member/product/${slug}/lesson/${id}`
     )
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
   }
 
   function getYouTubeEmbedUrl(url: string) {
