@@ -1856,7 +1856,7 @@ export default function AdminPaymentsPage(){
       }
     
 
-.content{margin-left:230px;min-height:100vh;padding:28px 34px 70px;min-width:0}
+.content{margin-left:230px;min-height:100vh;padding:28px 18px 70px;min-width:0}
 @media(max-width:1100px){.content{padding:24px 24px 60px}}
 @media(max-width:760px){.content{margin-left:0;padding:24px 14px 45px}}
 
