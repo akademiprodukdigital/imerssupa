@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../../../../lib/supabase'
+import MemberShell from '../../../../../../components/MemberShell'
 
 type Product = {
   id: string
@@ -532,7 +533,8 @@ export default function LessonReaderPage() {
     progress?.progress_percent ?? 0
 
   return (
-    <main style={styles.page}>
+    <MemberShell email={email} active="learning">
+      <main style={styles.page}>
       <div style={styles.container}>
 
         <div style={styles.topBar}>
@@ -844,7 +846,8 @@ export default function LessonReaderPage() {
           </div>
         </div>
       </div>
-    </main>
+      </main>
+    </MemberShell>
   )
 }
 
@@ -917,7 +920,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-block',
     padding: '6px 11px',
     borderRadius: 999,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 900,
     color: '#fca5a5',
     background: 'rgba(239,68,68,.12)',
@@ -981,7 +984,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
     marginBottom: 14,
     color: '#64748b',
-    fontSize: 12,
+    fontSize: 14,
   },
 
   breadcrumbArrow: {
@@ -1029,7 +1032,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '7px 11px',
     borderRadius: 999,
     color: '#bfdbfe',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1.4,
     background: 'rgba(255,255,255,.08)',
@@ -1046,7 +1049,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
     gap: 9,
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 14,
   },
 
   dot: {
@@ -1072,7 +1075,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   progressLabel: {
     color: '#818cf8',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1.5,
   },
@@ -1123,7 +1126,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   readerLabel: {
     color: '#818cf8',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1.5,
   },
@@ -1137,7 +1140,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '7px 10px',
     borderRadius: 999,
     color: '#86efac',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 850,
     background: 'rgba(34,197,94,.1)',
   },
@@ -1309,7 +1312,7 @@ const styles: Record<string, React.CSSProperties> = {
   actionText: {
     marginTop: 4,
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 14,
   },
 
   completeButton: {
@@ -1353,7 +1356,7 @@ const styles: Record<string, React.CSSProperties> = {
   navigationLabel: {
     marginBottom: 10,
     color: '#818cf8',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1.5,
   },
@@ -1388,7 +1391,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   navigationDirection: {
     color: '#818cf8',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 900,
     letterSpacing: 1.1,
   },
@@ -1431,7 +1434,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 8,
     color: '#64748b',
-    fontSize: 11,
+    fontSize: 13,
   },
 
   bottomStatusDot: {
@@ -1466,6 +1469,6 @@ const styles: Record<string, React.CSSProperties> = {
   securityText: {
     marginTop: 3,
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 14,
   },
 }
