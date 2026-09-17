@@ -83,6 +83,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadDashboard()
+
+    if (
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('profile') === '1'
+    ) {
+      setProfileOpen(true)
+    }
   }, [])
 
   async function loadDashboard() {
@@ -488,6 +495,9 @@ export default function AdminDashboard() {
                 isSuperAdmin
               }
               router={router}
+              onProfile={() =>
+                setProfileOpen(true)
+              }
             />
           </div>
 
@@ -1377,10 +1387,12 @@ function Menu({
   isSuperAdmin,
   router,
   onNavigate,
+  onProfile,
 }: {
   isSuperAdmin: boolean
   router: ReturnType<typeof useRouter>
   onNavigate?: () => void
+  onProfile?: () => void
 }) {
   function go(path: string) {
     onNavigate?.()
@@ -1510,9 +1522,10 @@ function Menu({
 
       <button
         className="menu-item"
-        onClick={() =>
-          go('/admin/profile')
-        }
+        onClick={() => {
+          onNavigate?.()
+          onProfile?.()
+        }}
       >
         <i>◉</i>
         Profile
