@@ -1598,7 +1598,7 @@ function DashboardStyles() {
       .brand-caption {
         margin-top: 2px;
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
         font-weight: 900;
         letter-spacing: 1.7px;
       }
@@ -1606,7 +1606,7 @@ function DashboardStyles() {
       .menu-label {
         margin: 37px 11px 10px;
         color: #475569;
-        font-size: 8px;
+        font-size: 12px;
         font-weight: 900;
         letter-spacing: 1.5px;
       }
@@ -1627,7 +1627,7 @@ function DashboardStyles() {
         cursor: pointer;
         color: #94a3b8;
         text-align: left;
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 750;
         background: transparent;
         transition: 0.2s ease;
@@ -1697,7 +1697,7 @@ function DashboardStyles() {
         justify-content: center;
         border-radius: 12px;
         color: #ffffff;
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 950;
         background:
           linear-gradient(
@@ -1731,7 +1731,7 @@ function DashboardStyles() {
       .mini-profile-info strong {
         overflow: hidden;
         color: #e2e8f0;
-        font-size: 10px;
+        font-size: 12px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -1739,7 +1739,7 @@ function DashboardStyles() {
       .mini-profile-info span {
         overflow: hidden;
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -1755,7 +1755,7 @@ function DashboardStyles() {
         border-radius: 12px;
         cursor: pointer;
         color: #fca5a5;
-        font-size: 9px;
+        font-size: 12px;
         font-weight: 800;
         background: rgba(127, 29, 29, 0.08);
       }
@@ -1811,7 +1811,7 @@ function DashboardStyles() {
         border: 0;
         outline: 0;
         color: #ffffff;
-        font-size: 10px;
+        font-size: 12px;
         background: transparent;
       }
 
@@ -1877,7 +1877,7 @@ function DashboardStyles() {
 
       .search-result strong {
         overflow: hidden;
-        font-size: 9px;
+        font-size: 12px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -1885,7 +1885,7 @@ function DashboardStyles() {
       .search-result small {
         overflow: hidden;
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -1894,7 +1894,7 @@ function DashboardStyles() {
         padding: 15px;
         color: #64748b;
         text-align: center;
-        font-size: 9px;
+        font-size: 12px;
       }
 
       .top-actions {
@@ -1960,14 +1960,14 @@ function DashboardStyles() {
 
       .top-profile-text strong {
         overflow: hidden;
-        font-size: 9px;
+        font-size: 12px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
       .top-profile-text small {
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
       }
 
       .dashboard-container {
@@ -1985,7 +1985,7 @@ function DashboardStyles() {
         border: 1px solid rgba(239, 68, 68, 0.12);
         border-radius: 14px;
         color: #fca5a5;
-        font-size: 10px;
+        font-size: 12px;
         background:
           linear-gradient(
             135deg,
@@ -2003,7 +2003,7 @@ function DashboardStyles() {
 
       .eyebrow {
         color: #818cf8;
-        font-size: 8px;
+        font-size: 12px;
         font-weight: 950;
         letter-spacing: 1.6px;
       }
@@ -2026,7 +2026,7 @@ function DashboardStyles() {
       .welcome-section p {
         margin: 0;
         color: #64748b;
-        font-size: 11px;
+        font-size: 13px;
         line-height: 1.6;
       }
 
@@ -2047,13 +2047,13 @@ function DashboardStyles() {
 
       .welcome-date small {
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
         font-weight: 900;
         letter-spacing: 1.2px;
       }
 
       .welcome-date strong {
-        font-size: 10px;
+        font-size: 12px;
       }
 
       .stats-grid {
@@ -2114,7 +2114,7 @@ function DashboardStyles() {
         align-items: center;
         justify-content: space-between;
         color: #64748b;
-        font-size: 10px;
+        font-size: 12px;
       }
 
       .stat-icon {
@@ -2138,14 +2138,14 @@ function DashboardStyles() {
       .stat-label {
         margin-top: 2px;
         color: #cbd5e1;
-        font-size: 9px;
+        font-size: 12px;
         font-weight: 800;
       }
 
       .stat-caption {
         margin-top: 5px;
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
       }
 
       .section-block {
@@ -2173,7 +2173,7 @@ function DashboardStyles() {
         padding: 7px 10px;
         border-radius: 999px;
         color: #94a3b8;
-        font-size: 8px;
+        font-size: 12px;
         font-weight: 800;
         background: rgba(255, 255, 255, 0.05);
       }
@@ -2259,7 +2259,7 @@ function DashboardStyles() {
         position: relative;
         z-index: 2;
         color: #bfdbfe;
-        font-size: 7px;
+        font-size: 11px;
         font-weight: 950;
         letter-spacing: 1.4px;
       }
@@ -2301,7 +2301,7 @@ function DashboardStyles() {
         padding: 6px 9px;
         border-radius: 999px;
         color: #c4b5fd;
-        font-size: 7px;
+        font-size: 11px;
         font-weight: 950;
         letter-spacing: 1.2px;
         background: rgba(124, 58, 237, 0.13);
@@ -2316,14 +2316,14 @@ function DashboardStyles() {
       .next-label {
         margin: 10px 0 3px;
         color: #64748b;
-        font-size: 8px;
+        font-size: 12px;
         font-weight: 800;
       }
 
       .continue-info h3 {
         margin: 0 0 18px;
         color: #cbd5e1;
-        font-size: 12px;
+        font-size: 14px;
       }
 
       .progress-meta {
@@ -2333,12 +2333,12 @@ function DashboardStyles() {
         justify-content: space-between;
         gap: 10px;
         color: #64748b;
-        font-size: 8px;
+        font-size: 12px;
       }
 
       .progress-meta strong {
         color: #a5b4fc;
-        font-size: 9px;
+        font-size: 12px;
       }
 
       .progress-track {
@@ -2374,7 +2374,7 @@ function DashboardStyles() {
         padding: 11px 14px;
         border-radius: 11px;
         cursor: pointer;
-        font-size: 9px;
+        font-size: 12px;
         font-weight: 850;
       }
 
@@ -2424,7 +2424,7 @@ function DashboardStyles() {
       .empty-card p {
         margin: 0;
         color: #64748b;
-        font-size: 9px;
+        font-size: 12px;
       }
 
       .complete-all-icon,
@@ -2550,7 +2550,7 @@ function DashboardStyles() {
 
       .product-cover-top > span:first-child {
         color: #c7d2fe;
-        font-size: 6px;
+        font-size: 10px;
         font-weight: 950;
         letter-spacing: 1.3px;
       }
@@ -2559,7 +2559,7 @@ function DashboardStyles() {
         padding: 5px 7px;
         border-radius: 999px;
         color: #86efac;
-        font-size: 6px;
+        font-size: 10px;
         font-weight: 950;
         background: rgba(34, 197, 94, 0.12);
       }
@@ -2596,12 +2596,12 @@ function DashboardStyles() {
         justify-content: space-between;
         gap: 10px;
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
       }
 
       .access-badge {
         color: #86efac;
-        font-size: 6px;
+        font-size: 10px;
         font-weight: 900;
       }
 
@@ -2616,7 +2616,7 @@ function DashboardStyles() {
         display: -webkit-box;
         overflow: hidden;
         color: #64748b;
-        font-size: 8px;
+        font-size: 12px;
         line-height: 1.5;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
@@ -2632,7 +2632,7 @@ function DashboardStyles() {
 
       .product-footer span {
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
       }
 
       .product-footer button {
@@ -2641,7 +2641,7 @@ function DashboardStyles() {
         border-radius: 9px;
         cursor: pointer;
         color: #ffffff;
-        font-size: 7px;
+        font-size: 11px;
         font-weight: 850;
         background:
           linear-gradient(
@@ -2738,7 +2738,7 @@ function DashboardStyles() {
       .activity-info strong,
       .resource-item strong {
         overflow: hidden;
-        font-size: 9px;
+        font-size: 12px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -2747,7 +2747,7 @@ function DashboardStyles() {
       .resource-item small {
         overflow: hidden;
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -2755,7 +2755,7 @@ function DashboardStyles() {
       .activity-progress,
       .resource-arrow {
         color: #818cf8;
-        font-size: 8px;
+        font-size: 12px;
         font-weight: 900;
       }
 
@@ -2782,13 +2782,13 @@ function DashboardStyles() {
       }
 
       .resource-summary strong {
-        font-size: 9px;
+        font-size: 12px;
       }
 
       .resource-summary p {
         margin: 3px 0 0;
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
         line-height: 1.4;
       }
 
@@ -2809,7 +2809,7 @@ function DashboardStyles() {
       .small-empty p {
         max-width: 260px;
         margin: 8px 0 0;
-        font-size: 8px;
+        font-size: 12px;
         line-height: 1.5;
       }
 
@@ -2822,7 +2822,7 @@ function DashboardStyles() {
         gap: 15px;
         border-top: 1px solid rgba(255, 255, 255, 0.05);
         color: #334155;
-        font-size: 7px;
+        font-size: 11px;
       }
 
       .profile-overlay,
@@ -2892,7 +2892,7 @@ function DashboardStyles() {
       .profile-hero p {
         margin: 0;
         color: #64748b;
-        font-size: 8px;
+        font-size: 12px;
       }
 
       .member-pill {
@@ -2900,7 +2900,7 @@ function DashboardStyles() {
         padding: 6px 9px;
         border-radius: 999px;
         color: #86efac;
-        font-size: 6px;
+        font-size: 10px;
         font-weight: 950;
         letter-spacing: 1px;
         background: rgba(34, 197, 94, 0.1);
@@ -2934,13 +2934,13 @@ function DashboardStyles() {
 
       .account-info-row span {
         color: #64748b;
-        font-size: 8px;
+        font-size: 12px;
       }
 
       .account-info-row strong {
         max-width: 210px;
         overflow: hidden;
-        font-size: 8px;
+        font-size: 12px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -2978,13 +2978,13 @@ function DashboardStyles() {
       }
 
       .security-card strong {
-        font-size: 9px;
+        font-size: 12px;
       }
 
       .security-card p {
         margin: 3px 0 0;
         color: #64748b;
-        font-size: 7px;
+        font-size: 11px;
         line-height: 1.4;
       }
 
@@ -2995,7 +2995,7 @@ function DashboardStyles() {
         padding: 12px 14px;
         border-radius: 12px;
         cursor: pointer;
-        font-size: 9px;
+        font-size: 12px;
         font-weight: 850;
       }
 
@@ -3079,7 +3079,7 @@ function DashboardStyles() {
       .loading-card p {
         margin: 0;
         color: #64748b;
-        font-size: 9px;
+        font-size: 12px;
       }
 
       .loading-line {
@@ -3187,7 +3187,7 @@ function DashboardStyles() {
         }
 
         .search-area input {
-          font-size: 9px;
+          font-size: 12px;
         }
 
         .welcome-section h1 {
@@ -3273,42 +3273,42 @@ function DashboardStyles() {
         backdrop-filter: blur(22px);
       }
       .brand-name { font-size: 17px !important; line-height: 1.15 !important; }
-      .brand-caption { font-size: 10px !important; letter-spacing: .17em !important; }
-      .menu-label { font-size: 10px !important; letter-spacing: .16em !important; }
+      .brand-caption { font-size: 12px !important; letter-spacing: .17em !important; }
+      .menu-label { font-size: 12px !important; letter-spacing: .16em !important; }
       .nav-item { font-size: 13.5px !important; font-weight: 760 !important; min-height: 46px !important; color: var(--text-secondary, #cbd5e1) !important; }
       .nav-item.active { color: var(--text-primary, #fff) !important; background: var(--surface-gradient, linear-gradient(135deg,rgba(59,130,246,.18),rgba(124,58,237,.14))) !important; border-color: var(--border-strong, rgba(129,140,248,.25)) !important; }
-      .mini-profile-info strong { font-size: 12.5px !important; color: var(--text-primary, #fff) !important; }
-      .mini-profile-info span { font-size: 10.5px !important; color: var(--text-muted, #94a3b8) !important; }
-      .logout-button { font-size: 12.5px !important; }
+      .mini-profile-info strong { font-size: 14px !important; color: var(--text-primary, #fff) !important; }
+      .mini-profile-info span { font-size: 12px !important; color: var(--text-muted, #94a3b8) !important; }
+      .logout-button { font-size: 14px !important; }
       .main-content { background: var(--page-gradient, #030712) !important; }
       .search-area { background: var(--input-bg, rgba(255,255,255,.05)) !important; border-color: var(--border, rgba(255,255,255,.08)) !important; }
       .search-area input { font-size: 13.5px !important; color: var(--text-primary, #fff) !important; }
       .search-area input::placeholder { color: var(--text-muted, #94a3b8) !important; }
-      .top-profile strong { font-size: 12px !important; color: var(--text-primary, #fff) !important; }
-      .top-profile small { font-size: 10px !important; color: var(--text-muted, #94a3b8) !important; }
-      .eyebrow { font-size: 10.5px !important; letter-spacing: .16em !important; }
+      .top-profile strong { font-size: 14px !important; color: var(--text-primary, #fff) !important; }
+      .top-profile small { font-size: 12px !important; color: var(--text-muted, #94a3b8) !important; }
+      .eyebrow { font-size: 12px !important; letter-spacing: .16em !important; }
       .welcome h1, .hero-copy h1 { font-size: clamp(34px, 3vw, 48px) !important; line-height: 1.08 !important; color: var(--text-primary, #fff) !important; }
       .welcome p, .hero-copy p { font-size: 13.5px !important; line-height: 1.7 !important; color: var(--text-secondary, #cbd5e1) !important; }
       .stat-card { background: var(--card-gradient, rgba(255,255,255,.05)) !important; border-color: var(--border, rgba(255,255,255,.08)) !important; box-shadow: var(--shadow, 0 20px 60px rgba(0,0,0,.15)) !important; }
-      .stat-label { font-size: 11.5px !important; color: var(--text-secondary, #cbd5e1) !important; }
+      .stat-label { font-size: 13px !important; color: var(--text-secondary, #cbd5e1) !important; }
       .stat-value { font-size: 30px !important; line-height: 1 !important; color: var(--text-primary, #fff) !important; }
-      .stat-note { font-size: 11px !important; line-height: 1.45 !important; color: var(--text-muted, #94a3b8) !important; }
+      .stat-note { font-size: 13px !important; line-height: 1.45 !important; color: var(--text-muted, #94a3b8) !important; }
       .section-heading h2 { font-size: 23px !important; color: var(--text-primary, #fff) !important; }
-      .section-heading p { font-size: 12.5px !important; line-height: 1.6 !important; color: var(--text-secondary, #cbd5e1) !important; }
+      .section-heading p { font-size: 14px !important; line-height: 1.6 !important; color: var(--text-secondary, #cbd5e1) !important; }
       .continue-card, .product-card, .activity-card, .resource-card, .empty-card, .profile-modal-card {
         background: var(--card-gradient, rgba(255,255,255,.05)) !important;
         border-color: var(--border, rgba(255,255,255,.08)) !important;
         box-shadow: var(--shadow, 0 20px 60px rgba(0,0,0,.16)) !important;
       }
       .continue-info h3, .product-card h3 { font-size: 18px !important; line-height: 1.35 !important; color: var(--text-primary, #fff) !important; }
-      .continue-info p, .product-card p { font-size: 12.5px !important; line-height: 1.65 !important; color: var(--text-secondary, #cbd5e1) !important; }
-      .progress-label, .progress-meta { font-size: 11.5px !important; color: var(--text-secondary, #cbd5e1) !important; }
+      .continue-info p, .product-card p { font-size: 14px !important; line-height: 1.65 !important; color: var(--text-secondary, #cbd5e1) !important; }
+      .progress-label, .progress-meta { font-size: 13px !important; color: var(--text-secondary, #cbd5e1) !important; }
       .continue-button, .open-product-button, .primary-action { font-size: 13px !important; font-weight: 850 !important; min-height: 44px !important; }
-      .activity-item strong, .resource-item strong { font-size: 12.5px !important; color: var(--text-primary, #fff) !important; }
-      .activity-item small, .resource-item small { font-size: 10.8px !important; line-height: 1.5 !important; color: var(--text-muted, #94a3b8) !important; }
-      .search-result strong { font-size: 12.5px !important; }
-      .search-result span, .search-result small { font-size: 10.5px !important; }
-      .dashboard-footer { font-size: 11.5px !important; color: var(--text-muted, #94a3b8) !important; }
+      .activity-item strong, .resource-item strong { font-size: 14px !important; color: var(--text-primary, #fff) !important; }
+      .activity-item small, .resource-item small { font-size: 12px !important; line-height: 1.5 !important; color: var(--text-muted, #94a3b8) !important; }
+      .search-result strong { font-size: 14px !important; }
+      .search-result span, .search-result small { font-size: 12px !important; }
+      .dashboard-footer { font-size: 13px !important; color: var(--text-muted, #94a3b8) !important; }
 
       @media (max-width: 900px) {
         .app-shell { grid-template-columns: 1fr !important; }
@@ -3354,7 +3354,7 @@ function DashboardStyles() {
       }
 
       .profile-drawer-header { gap: 20px !important; }
-      .profile-drawer-header .eyebrow { font-size: 11px !important; letter-spacing: 1.4px !important; }
+      .profile-drawer-header .eyebrow { font-size: 13px !important; letter-spacing: 1.4px !important; }
       .profile-drawer-header h2 { margin: 5px 0 0 !important; font-size: 23px !important; line-height: 1.2 !important; }
       .profile-drawer-header .icon-button { width: 42px !important; height: 42px !important; flex: 0 0 auto !important; border-radius: 13px !important; font-size: 20px !important; }
 
@@ -3368,7 +3368,7 @@ function DashboardStyles() {
       .profile-drawer .avatar.avatar-large { width: 72px !important; height: 72px !important; border-radius: 22px !important; font-size: 22px !important; }
       .profile-drawer .profile-hero h3 { margin: 14px 0 5px !important; font-size: 18px !important; line-height: 1.3 !important; color: var(--text-primary, #fff) !important; }
       .profile-drawer .profile-hero p { font-size: 13px !important; line-height: 1.5 !important; color: var(--text-muted, #94a3b8) !important; }
-      .profile-drawer .member-pill { margin-top: 12px !important; padding: 7px 11px !important; font-size: 10px !important; letter-spacing: .8px !important; }
+      .profile-drawer .member-pill { margin-top: 12px !important; padding: 7px 11px !important; font-size: 12px !important; letter-spacing: .8px !important; }
 
       .profile-drawer .account-info-card {
         margin-top: 16px !important;
@@ -3390,7 +3390,7 @@ function DashboardStyles() {
       }
       .profile-drawer .security-icon { width: 42px !important; height: 42px !important; border-radius: 13px !important; font-size: 16px !important; }
       .profile-drawer .security-card strong { font-size: 13.5px !important; color: var(--text-primary, #fff) !important; }
-      .profile-drawer .security-card p { margin-top: 4px !important; font-size: 12px !important; line-height: 1.5 !important; color: var(--text-muted, #94a3b8) !important; }
+      .profile-drawer .security-card p { margin-top: 4px !important; font-size: 14px !important; line-height: 1.5 !important; color: var(--text-muted, #94a3b8) !important; }
 
       .profile-drawer .change-password-button,
       .profile-drawer .drawer-logout-button {
