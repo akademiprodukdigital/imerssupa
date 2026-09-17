@@ -43,7 +43,7 @@ export default function AdminPaymentsPage(){
  const displayName=profile?.full_name?.trim()||email.split('@')[0]||'Administrator'
  const initials=displayName.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'A'
 
- return <div className="shell">
+ return <div className="admin-shell">
         <aside className="sidebar">
 
           <div>
@@ -131,7 +131,7 @@ export default function AdminPaymentsPage(){
    <div className="pagination"><span>Menampilkan <b>{start}–{end}</b> dari <b>{total.toLocaleString('id-ID')}</b> data</span><div><button disabled={page<=1||listLoading} onClick={()=>setPage(p=>p-1)}>← Previous</button><b>Page {page} / {pages}</b><button disabled={page>=pages||listLoading} onClick={()=>setPage(p=>p+1)}>Next →</button></div></div>
   </section></main>
   {selected&&<div className="backdrop" onClick={()=>!actionLoading&&setSelected(null)}><aside className="drawer" onClick={e=>e.stopPropagation()}><div className="drawerHead"><div><span className="eyebrow">PAYMENT DETAIL</span><h2>{selected.orders?.order_number||'Payment'}</h2><p>{selected.id}</p></div><button disabled={actionLoading} onClick={()=>setSelected(null)}>×</button></div><div className="drawerBody"><div className="total"><span>Amount Due</span><strong>{money(selected.amount_due)}</strong><small>{selected.payment_method_name_snapshot}</small></div><section><h3>Payment Information</h3><Info k="Status" v={label(selected.status)}/><Info k="Buyer" v={selected.orders?.buyer_name||'—'}/><Info k="Email" v={selected.orders?.buyer_email||'—'}/><Info k="Payer" v={selected.payer_name||'—'}/><Info k="Account" v={selected.payer_account||'—'}/><Info k="Reference" v={selected.provider_reference||'—'}/><Info k="Submitted" v={dateTime(selected.submitted_at)}/></section>{selected.payer_note&&<section><h3>Payer Note</h3><p>{selected.payer_note}</p></section>}{selected.proof_url&&<section><h3>Payment Proof</h3><a className="proof" href={selected.proof_url} target="_blank" rel="noreferrer">Open payment proof ↗</a></section>}{selected.rejection_reason&&<section><h3>Rejection Reason</h3><p>{selected.rejection_reason}</p></section>}{selected.status==='waiting_verification'&&<section><h3>Admin Verification</h3><textarea value={reviewNote} onChange={e=>setReviewNote(e.target.value)} placeholder="Catatan admin. Wajib diisi jika Reject."/><div className="actions"><button className="reject" disabled={actionLoading} onClick={()=>void review(false)}>Reject</button><button className="approve" disabled={actionLoading} onClick={()=>void review(true)}>{actionLoading?'Processing...':'Approve Payment'}</button></div></section>}</div></aside></div>}
-  <style jsx>{`
+  <style jsx global>{`
       .admin-shell {
         min-height: 100vh;
         display: grid;
