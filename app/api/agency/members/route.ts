@@ -6,17 +6,24 @@ export const runtime = 'nodejs'
 export async function POST(request: NextRequest) {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const anonKey =
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    const serviceKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!url || !anonKey || !serviceKey) {
       return NextResponse.json(
-        { error: 'Konfigurasi server Supabase belum lengkap.' },
+        {
+          error:
+            'Konfigurasi server Supabase belum lengkap.',
+        },
         { status: 500 }
       )
     }
 
-    const authHeader = request.headers.get('authorization') || ''
+    const authHeader =
+      request.headers.get('authorization') || ''
+
     const token = authHeader.startsWith('Bearer ')
       ? authHeader.slice(7)
       : ''
@@ -28,8 +35,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Client dengan JWT Agency.
-    // Penting karena RPC Agency memakai auth.uid().
+    /*
+     * Client ini memakai JWT Agency.
+     * Jadi RPC Agency tetap berjalan sebagai Agency
+     * yang sedang login, bukan sebagai service_role.
+     */
     const caller = createClient(url, anonKey, {
       global: {
         headers: {
@@ -42,6 +52,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    /*
+     * Pastikan token benar-benar milik user
+     * Supabase yang valid.
+     */
     const {
       data: authData,
       error: authError,
@@ -49,185 +63,209 @@ export async function POST(request: NextRequest) {
 
     if (authError || !authData.user) {
       return NextResponse.json(
-        { error: 'Session tidak valid.' },
+        {
+          error: `Session Agency tidak valid${
+            authError?.message
+              ? `: ${authError.message}`
+              : '.'
+          }`,
+        },
         { status: 401 }
       )
     }
 
-    // Service role hanya hidup di server.
-    const admin = createClient(url, serviceKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    })
-
-    // Pastikan pemanggil benar-benar Agency aktif.
+    /*
+     * Validasi bahwa user tersebut benar-benar
+     * Agency aktif.
+     */
     const {
-      data: agencyProfile,
-      error: agencyProfileError,
-    } = await admin
-      .from('profiles')
-      .select('role,status')
-      .eq('id', authData.user.id)
-      .maybeSingle()
+      data: isAgency,
+      error: agencyError,
+    } = await caller.rpc('is_imerssupa_agency')
 
-    if (
-      agencyProfileError ||
-      agencyProfile?.role !== 'agency' ||
-      agencyProfile?.status !== 'active'
-    ) {
+    if (agencyError) {
       return NextResponse.json(
-        { error: 'Active Agency access required.' },
+        {
+          error:
+            `Gagal memvalidasi Agency: ` +
+            agencyError.message,
+        },
+        { status: 500 }
+      )
+    }
+
+    if (isAgency !== true) {
+      return NextResponse.json(
+        {
+          error: 'Active Agency access required.',
+        },
         { status: 403 }
       )
     }
 
+    /*
+     * Ambil data dari form Agency.
+     */
     const body = await request.json()
 
-    const fullName = String(body.full_name || '').trim()
-    const email = String(body.email || '')
+    const fullName = String(
+      body.full_name || ''
+    ).trim()
+
+    const email = String(
+      body.email || ''
+    )
       .trim()
       .toLowerCase()
 
-    const phone = String(body.phone || '').trim()
-    const password = String(body.password || '')
-    const productId = String(body.product_id || '').trim()
+    const phone = String(
+      body.phone || ''
+    ).trim()
 
+    const password = String(
+      body.password || ''
+    )
+
+    const productId = String(
+      body.product_id || ''
+    ).trim()
+
+    /*
+     * Validasi input.
+     */
     if (!fullName) {
       return NextResponse.json(
-        { error: 'Nama Member wajib diisi.' },
+        {
+          error: 'Nama Member wajib diisi.',
+        },
         { status: 400 }
       )
     }
 
     if (!email) {
       return NextResponse.json(
-        { error: 'Email Member wajib diisi.' },
+        {
+          error: 'Email Login wajib diisi.',
+        },
         { status: 400 }
       )
     }
 
     if (password.length < 8) {
       return NextResponse.json(
-        { error: 'Password minimal 8 karakter.' },
+        {
+          error:
+            'Password Awal minimal 8 karakter.',
+        },
         { status: 400 }
       )
     }
 
     if (!productId) {
       return NextResponse.json(
-        { error: 'Product Access wajib dipilih.' },
+        {
+          error:
+            'Product Access wajib dipilih.',
+        },
         { status: 400 }
       )
     }
 
-    // ======================================================
-    // VALIDASI PRODUCT ENTITLEMENT AGENCY
-    // ======================================================
-
+    /*
+     * PRE-CHECK entitlement.
+     *
+     * Ini bukan pengaman quota utama.
+     * STEP 42 tetap melakukan pengecekan ulang
+     * dan lock quota saat grant dilakukan.
+     */
     const {
-      data: entitlement,
+      data: entitlements,
       error: entitlementError,
-    } = await admin
-      .from('agency_product_entitlements')
-      .select('id,slot_limit,status,expires_at')
-      .eq('agency_user_id', authData.user.id)
-      .eq('product_id', productId)
-      .maybeSingle()
+    } = await caller.rpc(
+      'get_my_agency_entitlements'
+    )
 
-    if (entitlementError || !entitlement) {
+    if (entitlementError) {
       return NextResponse.json(
         {
           error:
-            'Agency tidak mempunyai Product Access untuk produk ini.',
-        },
-        { status: 403 }
-      )
-    }
-
-    if (entitlement.status !== 'active') {
-      return NextResponse.json(
-        {
-          error: 'Product entitlement Agency tidak aktif.',
-        },
-        { status: 403 }
-      )
-    }
-
-    if (
-      entitlement.expires_at &&
-      new Date(entitlement.expires_at).getTime() <= Date.now()
-    ) {
-      return NextResponse.json(
-        {
-          error: 'Product entitlement Agency sudah berakhir.',
-        },
-        { status: 403 }
-      )
-    }
-
-    // ======================================================
-    // CEK SLOT
-    // ======================================================
-
-    const {
-      count,
-      error: countError,
-    } = await admin
-      .from('agency_member_grants')
-      .select('id', {
-        count: 'exact',
-        head: true,
-      })
-      .eq('agency_user_id', authData.user.id)
-      .eq('product_id', productId)
-      .eq('status', 'active')
-
-    if (countError) {
-      return NextResponse.json(
-        {
-          error: `Gagal memeriksa slot Agency: ${countError.message}`,
+            `Gagal memeriksa Product Entitlement: ` +
+            entitlementError.message,
         },
         { status: 500 }
       )
     }
 
-    if ((count ?? 0) >= entitlement.slot_limit) {
+    const entitlement = (
+      Array.isArray(entitlements)
+        ? entitlements
+        : []
+    ).find(
+      (row: any) =>
+        row.product_id === productId &&
+        row.status === 'active' &&
+        (
+          !row.expires_at ||
+          new Date(
+            row.expires_at
+          ).getTime() > Date.now()
+        ) &&
+        Number(row.remaining_slots) > 0
+    )
+
+    if (!entitlement) {
       return NextResponse.json(
         {
-          error: 'Slot Agency untuk produk ini sudah habis.',
+          error:
+            'Produk tidak tersedia, entitlement tidak aktif, atau slot Agency sudah habis.',
         },
-        { status: 409 }
+        { status: 400 }
       )
     }
 
-    // ======================================================
-    // CREATE MEMBER DI SUPABASE AUTH
-    // ======================================================
+    /*
+     * Service Role HANYA dipakai server-side
+     * untuk membuat Supabase Auth User.
+     *
+     * Key ini tidak pernah dikirim ke browser.
+     */
+    const admin = createClient(
+      url,
+      serviceKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    )
 
+    /*
+     * Buat Auth User Member.
+     */
     const {
       data: created,
       error: createError,
-    } = await admin.auth.admin.createUser({
-      email,
-      password,
-
-      // Member dapat langsung login.
-      email_confirm: true,
-
-      user_metadata: {
-        full_name: fullName,
-        phone,
-      },
-    })
+    } =
+      await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+          phone,
+        },
+      })
 
     if (createError || !created.user) {
       return NextResponse.json(
         {
           error:
-            createError?.message ||
-            'Gagal membuat akun Member.',
+            `Supabase Auth gagal membuat Member: ` +
+            (
+              createError?.message ||
+              'Unknown error'
+            ),
         },
         { status: 400 }
       )
@@ -235,48 +273,50 @@ export async function POST(request: NextRequest) {
 
     const userId = created.user.id
 
-    const rollbackAuth = async () => {
-      await admin.auth.admin.deleteUser(userId)
+    /*
+     * Kalau salah satu proses berikutnya gagal,
+     * Auth User yang baru dibuat dihapus lagi
+     * supaya tidak meninggalkan akun gantung.
+     */
+    const rollback = async () => {
+      await admin.auth.admin.deleteUser(
+        userId
+      )
     }
 
-    // ======================================================
-    // PROFILE MEMBER
-    // ======================================================
-
+    /*
+     * STEP 44:
+     * buat profile role=member.
+     */
     const {
       error: profileError,
-    } = await admin
-      .from('profiles')
-      .upsert(
-        {
-          id: userId,
-          full_name: fullName,
-          phone: phone || null,
-          role: 'member',
-          status: 'active',
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'id',
-        }
-      )
+    } = await caller.rpc(
+      'agency_create_member_profile',
+      {
+        p_user_id: userId,
+        p_full_name: fullName,
+        p_phone: phone || null,
+      }
+    )
 
     if (profileError) {
-      await rollbackAuth()
+      await rollback()
 
       return NextResponse.json(
         {
           error:
-            `Profile Member gagal dibuat: ${profileError.message}`,
+            `Profile Member gagal dibuat: ` +
+            profileError.message,
         },
         { status: 500 }
       )
     }
 
-    // ======================================================
-    // HUBUNGKAN MEMBER DENGAN AGENCY
-    // ======================================================
-
+    /*
+     * STEP 42:
+     * hubungkan Member ke Agency
+     * yang sedang login.
+     */
     const {
       error: attachError,
     } = await caller.rpc(
@@ -287,22 +327,25 @@ export async function POST(request: NextRequest) {
     )
 
     if (attachError) {
-      await rollbackAuth()
+      await rollback()
 
       return NextResponse.json(
         {
           error:
-            `Member gagal dihubungkan ke Agency: ${attachError.message}`,
+            `Member gagal dihubungkan ke Agency: ` +
+            attachError.message,
         },
         { status: 500 }
       )
     }
 
-    // ======================================================
-    // BERI PRODUCT ACCESS
-    // RPC INI SEKALIGUS MEMBUAT member_access
-    // ======================================================
-
+    /*
+     * STEP 42:
+     * berikan Product Access.
+     *
+     * RPC inilah yang melakukan pengecekan
+     * entitlement + slot Agency lagi.
+     */
     const {
       error: grantError,
     } = await caller.rpc(
@@ -314,19 +357,21 @@ export async function POST(request: NextRequest) {
     )
 
     if (grantError) {
-      // auth user dihapus.
-      // FK cascade membersihkan profile/ownership terkait.
-      await rollbackAuth()
+      await rollback()
 
       return NextResponse.json(
         {
           error:
-            `Product Access gagal diberikan: ${grantError.message}`,
+            `Product Access gagal diberikan: ` +
+            grantError.message,
         },
         { status: 500 }
       )
     }
 
+    /*
+     * SELESAI.
+     */
     return NextResponse.json({
       ok: true,
       user_id: userId,
@@ -334,18 +379,14 @@ export async function POST(request: NextRequest) {
         'Member berhasil dibuat dan Product Access aktif.',
     })
   } catch (error: unknown) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Terjadi kesalahan server.'
-
     return NextResponse.json(
       {
-        error: message,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Terjadi kesalahan server.',
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     )
   }
 }
