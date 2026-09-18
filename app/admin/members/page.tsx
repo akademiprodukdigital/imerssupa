@@ -244,7 +244,7 @@ export default function AdminMembersPage() {
           {me?.role === 'super_admin' && (
             <>
               <p>SUPER ADMIN</p>
-              <button onClick={() => router.push('/admin/administrators')}>♛ <span>Administrators</span></button>
+              <button onClick={() => router.push('/admin/agencies')}>♜ <span>Agency Management</span></button><button onClick={() => router.push('/admin/administrators')}>♛ <span>Administrators</span></button>
               <button onClick={() => router.push('/admin/settings')}>⚙ <span>System Settings</span></button>
               <button onClick={() => router.push('/admin/settings/commerce')}>◈ <span>Commerce Settings</span></button>
               <button onClick={() => router.push('/admin/security')}>◇ <span>Security / Audit</span></button>
