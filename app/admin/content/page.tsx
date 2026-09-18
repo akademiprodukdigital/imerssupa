@@ -30,25 +30,6 @@ type LessonForm = {
   external_url:string; sort_order:number; is_published:boolean; is_preview:boolean
 }
 
-type AccessRow = {
-  id: string
-  user_id: string
-  product_id: string
-  access_status: string | null
-  expires_at: string | null
-}
-
-type Product = {
-  id: string
-  name: string
-}
-
-type EditForm = {
-  full_name: string
-  phone: string
-  status: string
-}
-
 const PAGE_SIZES = [10, 25, 50, 100]
 
 export default function AdminContentPage() {
