@@ -179,14 +179,3 @@ export default function AdminContentPage() {
 function pretty(value: string) {
   return value.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
-
-function date(value?: string | null) {
-  if (!value) return '—'
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return '—'
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsed)
-}
