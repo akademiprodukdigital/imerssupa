@@ -18,6 +18,8 @@ export default function AdminNotificationsPage(){
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState('')
  const [searchInput,setSearchInput]=useState(''),[search,setSearch]=useState(''),[channel,setChannel]=useState('all'),[status,setStatus]=useState('all')
  const [page,setPage]=useState(1),[pageSize,setPageSize]=useState(25),[total,setTotal]=useState(0)
+ const [editingTemplate,setEditingTemplate]=useState<Template|null>(null)
+ const [editName,setEditName]=useState(''),[editSubject,setEditSubject]=useState(''),[editBody,setEditBody]=useState(''),[editActive,setEditActive]=useState(true),[savingTemplate,setSavingTemplate]=useState(false)
 
  const displayName=profile?.full_name?.trim()||email.split('@')[0]||'Administrator'
  const initials=displayName.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')||'A'
@@ -39,10 +41,10 @@ export default function AdminNotificationsPage(){
   setLoading(true);setError('')
   try{
    if(tab==='templates'){
-    let q=supabase.from('notification_templates').select('*').order('sort_order',{ascending:true}).order('updated_at',{ascending:false}).limit(1000)
-    if(channel!=='all')q=q.eq('channel',channel)
-    const {data,error}=await q;if(error)throw error
-    const all=((data||[]) as Template[])
+    const {data,error}=await supabase.rpc('admin_list_notification_templates')
+    if(error)throw error
+    let all=((data||[]) as Template[])
+    if(channel!=='all')all=all.filter(t=>t.channel===channel)
     const needle=search.trim().toLowerCase()
     const filtered=!needle?all:all.filter(t=>{
      const eventKey=String(t.event_key??'').toLowerCase()
@@ -82,6 +84,43 @@ export default function AdminNotificationsPage(){
   setError('');setMessage('')
   const {error}=await supabase.rpc('admin_retry_notification',{p_outbox_id:id})
   if(error)setError(error.message);else{setMessage('Notification dimasukkan kembali ke antrean.');await loadData()}
+ }
+
+ const openTemplateEditor=(t:Template)=>{
+  setError('');setMessage('')
+  setEditingTemplate(t)
+  setEditName(String(t.name??''))
+  setEditSubject(String(t.subject_template??''))
+  setEditBody(String(t.body_template??''))
+  setEditActive(t.active!==false)
+ }
+
+ const closeTemplateEditor=()=>{
+  if(savingTemplate)return
+  setEditingTemplate(null)
+ }
+
+ const saveTemplate=async(e:FormEvent)=>{
+  e.preventDefault()
+  if(!editingTemplate)return
+  if(!editName.trim()){setError('Nama template wajib diisi.');return}
+  if(!editBody.trim()){setError('Isi pesan / body template wajib diisi.');return}
+  setSavingTemplate(true);setError('');setMessage('')
+  try{
+   const {error}=await supabase.rpc('admin_update_notification_template',{
+    p_event_key:String(editingTemplate.event_key??''),
+    p_channel:String(editingTemplate.channel??''),
+    p_name:editName.trim(),
+    p_subject_template:editSubject,
+    p_body_template:editBody,
+    p_active:editActive,
+   })
+   if(error)throw error
+   setEditingTemplate(null)
+   setMessage('Template notification berhasil diperbarui.')
+   await loadData()
+  }catch(e:any){setError(e?.message||'Gagal menyimpan template notification.')}
+  finally{setSavingTemplate(false)}
  }
 
  return <div className="admin-shell">
@@ -187,10 +226,22 @@ export default function AdminNotificationsPage(){
   {tab==='outbox'?<><div className="nt-table-wrap"><table className="nt-table"><thead><tr><th>RECIPIENT</th><th>CHANNEL</th><th>STATUS</th><th>ATTEMPTS</th><th>CREATED</th><th>SENT</th><th>ERROR</th><th>ACTION</th></tr></thead><tbody>
    {!loading&&rows.map(r=><tr key={r.id}><td><span className="nt-title">{String(r.recipient??r.recipient_address??r.destination??r.to_address??'—')}</span><span className="nt-sub">{r.id}</span></td><td><span className={`nt-badge ${r.channel}`}>{r.channel}</span></td><td><span className={`nt-badge ${r.status}`}>{r.status}</span></td><td>{Number(r.attempt_count??r.attempts??0)}</td><td>{dt(r.created_at)}</td><td>{dt(r.sent_at)}</td><td>{r.last_error||'—'}</td><td>{r.status==='failed'?<button className="nt-small" onClick={()=>void retry(r.id)}>Retry</button>:'—'}</td></tr>)}
   </tbody></table>{loading&&<div className="nt-empty">Loading notification outbox...</div>}{!loading&&rows.length===0&&<div className="nt-empty">Belum ada notification yang sesuai filter.</div>}</div></>:
-  <div className="nt-template-grid">{!loading&&templates.map(t=><div className="nt-template" key={t.id}><span className={`nt-badge ${t.channel}`}>{t.channel}</span><h3>{t.name||t.event_key||'Template'}</h3><p><strong>{t.event_key||'—'}</strong><br/>{t.subject_template||t.body_template?.slice(0,90)||'Template notification'}</p><div className="nt-template-footer"><span>{t.active===false?'Inactive':'Active'}</span><span>{dt(t.updated_at)}</span></div></div>)}{loading&&<div className="nt-empty">Loading templates...</div>}{!loading&&templates.length===0&&<div className="nt-empty">Belum ada template yang sesuai filter.</div>}</div>}
+  <div className="nt-template-grid">{!loading&&templates.map(t=><div className="nt-template" key={t.id}><div className="nt-template-top"><span className={`nt-badge ${t.channel}`}>{t.channel}</span><span className={`nt-state ${t.active===false?'off':'on'}`}>{t.active===false?'Inactive':'Active'}</span></div><h3>{t.name||t.event_key||'Template'}</h3><p className="nt-event">{t.event_key||'—'}</p>{t.channel==='email'&&<p className="nt-subject"><strong>Subject:</strong> {t.subject_template||'—'}</p>}<p className="nt-preview">{t.body_template?.slice(0,150)||'Template notification'}</p><div className="nt-template-footer"><span>{dt(t.updated_at)}</span><button type="button" className="nt-edit" onClick={()=>openTemplateEditor(t)}>✎ Edit Template</button></div></div>)}{loading&&<div className="nt-empty">Loading templates...</div>}{!loading&&templates.length===0&&<div className="nt-empty">Belum ada template yang sesuai filter.</div>}</div>}
 
   <div className="nt-pagination"><span>Menampilkan {start}–{end} dari {total} data</span><div className="nt-pages"><button disabled={page<=1||loading} onClick={()=>setPage(v=>Math.max(1,v-1))}>← Previous</button><strong>Page {page} / {pages}</strong><button disabled={page>=pages||loading} onClick={()=>setPage(v=>Math.min(pages,v+1))}>Next →</button></div></div>
  </section>
+
+ {editingTemplate&&<div className="nt-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)closeTemplateEditor()}}>
+  <form className="nt-modal" onSubmit={saveTemplate}>
+   <div className="nt-modal-head"><div><div className="nt-kicker">EDIT NOTIFICATION TEMPLATE</div><h2>{editingTemplate.name||editingTemplate.event_key}</h2><p>Ubah copywriting template tanpa mengubah identitas trigger.</p></div><button type="button" className="nt-close" onClick={closeTemplateEditor} disabled={savingTemplate}>×</button></div>
+   <div className="nt-lock-grid"><div><span>EVENT KEY</span><strong>{editingTemplate.event_key||'—'}</strong></div><div><span>CHANNEL</span><strong>{String(editingTemplate.channel||'—').toUpperCase()}</strong></div></div>
+   <label className="nt-field"><span>Nama Template</span><input value={editName} onChange={e=>setEditName(e.target.value)} maxLength={160} required/></label>
+   {editingTemplate.channel==='email'&&<label className="nt-field"><span>Subject Email</span><input value={editSubject} onChange={e=>setEditSubject(e.target.value)} maxLength={300} placeholder="Contoh: Pembayaran {{order_number}} berhasil"/></label>}
+   <label className="nt-field"><span>Isi Pesan / Copywriting</span><textarea value={editBody} onChange={e=>setEditBody(e.target.value)} rows={9} required/><small>Placeholder seperti {'{{name}}'}, {'{{order_number}}'}, {'{{grand_total}}'} tetap bisa dipakai sesuai trigger.</small></label>
+   <label className="nt-switch-row"><div><strong>Template Aktif</strong><span>Matikan jika trigger ini sementara tidak ingin menggunakan template.</span></div><input type="checkbox" checked={editActive} onChange={e=>setEditActive(e.target.checked)}/></label>
+   <div className="nt-modal-actions"><button type="button" className="nt-cancel" onClick={closeTemplateEditor} disabled={savingTemplate}>Batal</button><button type="submit" className="nt-save" disabled={savingTemplate}>{savingTemplate?'Menyimpan...':'Simpan Template'}</button></div>
+  </form>
+ </div>}
 </main>
 <style jsx global>{`
       .admin-shell {
@@ -1951,8 +2002,8 @@ export default function AdminNotificationsPage(){
 .nt-filters{padding:12px 20px;border-bottom:1px solid rgba(124,92,255,.08);display:flex;gap:8px}.nt-search{display:flex;flex:1;height:40px;border:1px solid #dfe4ef;border-radius:10px;overflow:hidden;background:#fff}.nt-search input{border:0;outline:0;flex:1;padding:0 12px;font-size:12px}.nt-search button{border:0;border-left:1px solid #e6e8ef;background:#f7f8fb;padding:0 15px;font-size:11px;font-weight:800}.nt-filters select{height:40px;border:1px solid #dfe4ef;border-radius:10px;background:#fff;padding:0 10px;font-size:11px}
 .nt-table-wrap{overflow:auto}.nt-table{width:100%;border-collapse:collapse;min-width:960px}.nt-table th{padding:11px 14px;background:linear-gradient(90deg,#f8f9ff,#fbfbff);text-align:left;font-size:9px;letter-spacing:.7px;color:#7e879a}.nt-table td{padding:12px 14px;border-top:1px solid #f0f1f5;font-size:11px;color:#4f596d}.nt-title{font-size:12px;color:#20283a;font-weight:850}.nt-sub{display:block;font-size:9px;color:#929aac;margin-top:3px}.nt-badge{display:inline-flex;border-radius:999px;padding:5px 8px;font-size:9px;font-weight:900;text-transform:uppercase}.nt-badge.sent{background:#e7faef;color:#15834b}.nt-badge.queued,.nt-badge.processing{background:#fff6d9;color:#946600}.nt-badge.failed,.nt-badge.cancelled{background:#ffe8ec;color:#c73a52}.nt-badge.in_app{background:#efeaff;color:#654de1}.nt-badge.email{background:#e9f5ff;color:#2872b8}.nt-badge.whatsapp{background:#e8fbf0;color:#198452}.nt-small{height:31px;padding:0 9px;border:1px solid #e0e4ee;border-radius:8px;background:#fff;font-size:10px;font-weight:800;cursor:pointer}
 .nt-pagination{display:flex;justify-content:space-between;align-items:center;padding:13px 20px;border-top:1px solid #f0f1f5;font-size:10px;color:#8992a5}.nt-pages{display:flex;align-items:center;gap:8px}.nt-pages button{height:32px;padding:0 10px;border:1px solid #e5e8f0;border-radius:8px;background:#fff;font-size:10px}.nt-pages button:disabled{opacity:.4}.nt-empty{padding:55px 20px;text-align:center;color:#9aa2b4;font-size:11px}.nt-alert{margin-bottom:14px;padding:11px 13px;border-radius:11px;font-size:11px}.nt-alert.error{border:1px solid #ffd7de;background:#fff1f4;color:#b6344c}.nt-alert.ok{border:1px solid #ccefdc;background:#effcf5;color:#24764d}
-.nt-template-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:18px 20px}.nt-template{border:1px solid #e5e6f1;border-radius:14px;padding:14px;background:rgba(255,255,255,.65)}.nt-template h3{font-size:13px;margin:8px 0 4px}.nt-template p{font-size:10px;color:#8c95a8;margin:0 0 12px;min-height:30px}.nt-template-footer{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#929aac}
-@media(max-width:1100px){.nt-stats{grid-template-columns:repeat(2,1fr)}.nt-template-grid{grid-template-columns:1fr 1fr}}@media(max-width:760px){.nt-head{flex-direction:column}.nt-stats{grid-template-columns:1fr}.nt-filters{flex-direction:column}.nt-template-grid{grid-template-columns:1fr}}
+.nt-template-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:18px 20px}.nt-template{border:1px solid #e5e6f1;border-radius:14px;padding:14px;background:rgba(255,255,255,.65)}.nt-template h3{font-size:13px;margin:8px 0 4px}.nt-template p{font-size:10px;color:#8c95a8;margin:0 0 12px;min-height:30px}.nt-template-footer{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#929aac}.nt-template-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.nt-state{font-size:9px;font-weight:800;padding:4px 7px;border-radius:999px}.nt-state.on{background:#e8f8ef;color:#228653}.nt-state.off{background:#ffeaed;color:#c94f5c}.nt-template .nt-event{min-height:0;margin:0 0 8px;color:#6555d5;font-weight:800}.nt-template .nt-subject{min-height:0;margin:0 0 8px;color:#68738a}.nt-template .nt-preview{min-height:44px;line-height:1.55}.nt-template-footer{gap:10px}.nt-edit{border:0;border-radius:9px;padding:7px 10px;cursor:pointer;color:#fff;font-size:10px;font-weight:800;background:linear-gradient(135deg,#6d58e8,#398eea)}.nt-modal-backdrop{position:fixed;inset:0;z-index:200;background:rgba(16,23,43,.58);display:grid;place-items:center;padding:20px}.nt-modal{width:min(680px,96vw);max-height:92vh;overflow:auto;border:1px solid rgba(124,92,255,.16);border-radius:20px;padding:20px;background:linear-gradient(145deg,#fff 0%,#fbfbff 55%,#f5f0ff 100%);box-shadow:0 30px 80px rgba(31,35,70,.25)}.nt-modal-head{display:flex;justify-content:space-between;gap:18px;margin-bottom:16px}.nt-modal-head h2{margin:4px 0;font-size:19px}.nt-modal-head p{margin:0;color:#7b849c;font-size:11px}.nt-close{width:34px;height:34px;border:1px solid #e3e5ed;border-radius:10px;background:#fff;cursor:pointer;font-size:20px}.nt-lock-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.nt-lock-grid>div{padding:11px;border:1px solid #e5e6f1;border-radius:12px;background:rgba(255,255,255,.7);display:grid;gap:3px}.nt-lock-grid span{font-size:9px;color:#929aac;font-weight:800;letter-spacing:.08em}.nt-lock-grid strong{font-size:11px;color:#4b566c;word-break:break-word}.nt-field{display:grid;gap:6px;margin-bottom:13px}.nt-field>span{font-size:11px;font-weight:800;color:#4b566c}.nt-field input,.nt-field textarea{width:100%;border:1px solid #dfe3ed;border-radius:11px;padding:11px 12px;outline:0;background:#fff;color:#30384b;font:inherit;font-size:12px}.nt-field textarea{resize:vertical;line-height:1.55}.nt-field small{font-size:9px;color:#929aac}.nt-switch-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px;border:1px solid #e5e6f1;border-radius:12px;background:rgba(255,255,255,.7)}.nt-switch-row>div{display:grid;gap:3px}.nt-switch-row strong{font-size:11px}.nt-switch-row span{font-size:9px;color:#929aac}.nt-switch-row input{width:18px;height:18px}.nt-modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:16px}.nt-modal-actions button{border:0;border-radius:10px;padding:10px 14px;font-size:11px;font-weight:800;cursor:pointer}.nt-cancel{background:#eef0f5;color:#667085}.nt-save{background:linear-gradient(135deg,#6d58e8,#398eea);color:#fff}.nt-modal-actions button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:1100px){.nt-stats{grid-template-columns:repeat(2,1fr)}.nt-template-grid{grid-template-columns:1fr 1fr}}@media(max-width:760px){.nt-head{flex-direction:column}.nt-stats{grid-template-columns:1fr}.nt-filters{flex-direction:column}.nt-template-grid{grid-template-columns:1fr}.nt-lock-grid{grid-template-columns:1fr}.nt-modal{padding:15px}.nt-modal-actions{display:grid;grid-template-columns:1fr 1fr}}
 `}</style>
 </div>
 }
