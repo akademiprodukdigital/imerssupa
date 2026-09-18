@@ -40,6 +40,8 @@ type ProductForm = {
   status: string
   category_id: string
   video_url: string
+  agency_enabled: boolean
+  agency_default_slots: string
 }
 
 type ProductCategory = {
@@ -49,6 +51,12 @@ type ProductCategory = {
   description: string | null
   is_active: boolean
   sort_order: number
+}
+
+type ProductAgencySetting = {
+  product_id: string
+  agency_enabled: boolean
+  default_slot_limit: number
 }
 
 type ProductMedia = {
@@ -85,6 +93,7 @@ export default function AdminProductsPage() {
   const [accessRows, setAccessRows] = useState<AccessRow[]>([])
   const [categories, setCategories] = useState<ProductCategory[]>([])
   const [mediaRows, setMediaRows] = useState<ProductMedia[]>([])
+  const [agencySettings, setAgencySettings] = useState<ProductAgencySetting[]>([])
   const [categoryManager, setCategoryManager] = useState(false)
   const [categoryName, setCategoryName] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([''])
@@ -98,7 +107,7 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<Product | null>(null)
   const [createMode, setCreateMode] = useState(false)
-  const [form, setForm] = useState<ProductForm>({ name: '', slug: '', price: '0', status: 'draft', category_id: '', video_url: '' })
+  const [form, setForm] = useState<ProductForm>({ name: '', slug: '', price: '0', status: 'draft', category_id: '', video_url: '', agency_enabled: false, agency_default_slots: '20' })
 
   const load = async () => {
     setLoading(true)
@@ -133,11 +142,12 @@ export default function AdminProductsPage() {
     }
     setMe(profile)
 
-    const [productsResult, accessResult, categoriesResult, mediaResult] = await Promise.all([
+    const [productsResult, accessResult, categoriesResult, mediaResult, agencyResult] = await Promise.all([
       supabase.from('products').select('*').order('created_at', { ascending: false }),
       supabase.from('member_access').select('id,user_id,product_id,access_status,expires_at'),
       supabase.from('product_categories').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true }),
       supabase.from('product_media').select('*').order('sort_order', { ascending: true }),
+      supabase.rpc('admin_list_product_agency_settings'),
     ])
 
     const errors: string[] = []
@@ -152,6 +162,8 @@ export default function AdminProductsPage() {
 
     if (mediaResult.error) errors.push(`Media: ${mediaResult.error.message}`)
     else setMediaRows((mediaResult.data ?? []) as ProductMedia[])
+    if (agencyResult.error) errors.push(`Agency: ${agencyResult.error.message}`)
+    else setAgencySettings((agencyResult.data ?? []) as ProductAgencySetting[])
 
     if (errors.length) setError(errors.join(' • '))
     setLoading(false)
@@ -188,7 +200,7 @@ export default function AdminProductsPage() {
     setCreateMode(true)
     setError('')
     setNotice('')
-    setForm({ name: '', slug: '', price: '0', status: 'draft', category_id: '', video_url: '' })
+    setForm({ name: '', slug: '', price: '0', status: 'draft', category_id: '', video_url: '', agency_enabled: false, agency_default_slots: '20' })
     setImageUrls([''])
   }
 
@@ -207,6 +219,8 @@ export default function AdminProductsPage() {
       status: product.status ?? 'draft',
       category_id: (product as any).category_id ?? '',
       video_url: video?.media_url ?? '',
+      agency_enabled: agencySettings.find((a) => a.product_id === product.id)?.agency_enabled ?? false,
+      agency_default_slots: String(agencySettings.find((a) => a.product_id === product.id)?.default_slot_limit ?? 20),
     })
     setImageUrls(images.length ? images.map((m) => m.media_url) : [''])
   }
@@ -239,6 +253,24 @@ export default function AdminProductsPage() {
 
     if (result.error) {
       setError(`Gagal menyimpan produk: ${result.error.message}`)
+      setSaving(false)
+      return
+    }
+
+    const savedProductId = selected?.id || (result.data as { id?: string } | null)?.id
+    if (!savedProductId) {
+      setError('Produk tersimpan tetapi Product ID tidak dapat dibaca untuk Agency Settings.')
+      setSaving(false)
+      return
+    }
+
+    const { error: agencyError } = await supabase.rpc('admin_set_product_agency_settings', {
+      p_product_id: savedProductId,
+      p_agency_enabled: form.agency_enabled,
+      p_default_slot_limit: Math.max(1, Number(form.agency_default_slots || 20)),
+    })
+    if (agencyError) {
+      setError(`Produk tersimpan, tetapi Agency Settings gagal: ${agencyError.message}`)
       setSaving(false)
       return
     }
@@ -511,6 +543,18 @@ export default function AdminProductsPage() {
                 <input value={form.video_url} onChange={(e) => setForm({...form,video_url:e.target.value})} placeholder="YouTube, Vimeo, .mp4 atau .webm" />
                 <small style={{display:'block',marginTop:5,color:'#8994a8',fontWeight:500}}>Kosongkan jika produk tidak memiliki video. Video hanya tampil di frontend bila URL diisi.</small>
               </label>
+              <div className="member-info" style={{marginTop:13}}>
+                <span>AGENCY PROGRAM — OPTIONAL PER PRODUCT</span>
+                <p>Aktifkan hanya jika produk ini boleh digunakan oleh Agency untuk membuat member dan membagikan akses.</p>
+                <label style={{display:'flex',alignItems:'center',gap:9,flexDirection:'row',marginTop:10}}>
+                  <input type="checkbox" checked={form.agency_enabled} onChange={(e) => setForm({...form,agency_enabled:e.target.checked})} style={{width:16,height:16}} />
+                  Agency Program aktif untuk produk ini
+                </label>
+                {form.agency_enabled && <label style={{marginTop:10}}>Default Slot Agency
+                  <input type="number" min="1" value={form.agency_default_slots} onChange={(e) => setForm({...form,agency_default_slots:e.target.value})} />
+                  <small style={{display:'block',marginTop:5,color:'#8994a8',fontWeight:500}}>Contoh 20 = satu entitlement Agency default dapat membuat/memberi akses maksimal 20 member untuk produk ini. Slot per Agency tetap bisa dioverride.</small>
+                </label>}
+              </div>
               <label>Status<select value={form.status} onChange={(e) => setForm({...form,status:e.target.value})}><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
               {!createMode && selected && <div className="member-info"><span>PRODUCT SUMMARY</span><div><strong>Active Member Access</strong><small>{memberCount(selected.id)} member</small></div><div><strong>Product ID</strong><small>{selected.id}</small></div></div>}
               <div className="modal-actions">
