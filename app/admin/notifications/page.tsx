@@ -8,7 +8,7 @@ const supabase=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NE
 
 type Profile={full_name?:string|null;avatar_url?:string|null;role?:string|null}
 type Outbox={id:string;channel:string;status:string;recipient?:string|null;recipient_address?:string|null;destination?:string|null;to_address?:string|null;attempt_count?:number|null;attempts?:number|null;last_error?:string|null;created_at?:string|null;sent_at?:string|null;notification_id?:string|null;notification?:string|null;[key:string]:unknown}
-type Template={id:string;template_key?:string|null;name?:string|null;channel:string;subject_template?:string|null;body_template?:string|null;is_active?:boolean|null;updated_at?:string|null}
+type Template={id:string;event_key?:string|null;name?:string|null;channel:string;subject_template?:string|null;body_template?:string|null;active?:boolean|null;sort_order?:number|null;updated_at?:string|null;[key:string]:unknown}
 const dt=(v?:string|null)=>v?new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):'—'
 
 export default function AdminNotificationsPage(){
@@ -39,11 +39,19 @@ export default function AdminNotificationsPage(){
   setLoading(true);setError('')
   try{
    if(tab==='templates'){
-    let q=supabase.from('notification_templates').select('id,template_key,name,channel,subject_template,body_template,is_active,updated_at',{count:'exact'}).order('updated_at',{ascending:false}).range((page-1)*pageSize,page*pageSize-1)
+    let q=supabase.from('notification_templates').select('*').order('sort_order',{ascending:true}).order('updated_at',{ascending:false}).limit(1000)
     if(channel!=='all')q=q.eq('channel',channel)
-    if(search.trim()){const x=search.trim().replaceAll(',',' ');q=q.or(`template_key.ilike.%${x}%,name.ilike.%${x}%`)}
-    const {data,error,count}=await q;if(error)throw error
-    setTemplates((data||[]) as Template[]);setRows([]);setTotal(count||0)
+    const {data,error}=await q;if(error)throw error
+    const all=((data||[]) as Template[])
+    const needle=search.trim().toLowerCase()
+    const filtered=!needle?all:all.filter(t=>{
+     const eventKey=String(t.event_key??'').toLowerCase()
+     const name=String(t.name??'').toLowerCase()
+     const subject=String(t.subject_template??'').toLowerCase()
+     return eventKey.includes(needle)||name.includes(needle)||subject.includes(needle)
+    })
+    const from=(page-1)*pageSize
+    setTemplates(filtered.slice(from,from+pageSize));setRows([]);setTotal(filtered.length)
    }else{
     // STEP 25 notification_outbox tidak memiliki kolom notification_id.
     // Ambil schema asli dengan select('*') agar frontend tidak hardcode kolom yang tidak ada.
@@ -170,7 +178,7 @@ export default function AdminNotificationsPage(){
  <section className="nt-card">
   <div className="nt-card-head"><div className="nt-kicker">NOTIFICATION CENTER</div><h2>{tab==='outbox'?'Notification Outbox':'Notification Templates'}</h2><p>{tab==='outbox'?'Pantau antrean provider-neutral email, WhatsApp, dan in-app.':'Template dinamis untuk event platform dan commerce.'}</p></div>
   <div className="nt-tabs"><button className={`nt-tab ${tab==='outbox'?'active':''}`} onClick={()=>{setTab('outbox');setPage(1);setStatus('all')}}>Outbox</button><button className={`nt-tab ${tab==='templates'?'active':''}`} onClick={()=>{setTab('templates');setPage(1);setStatus('all')}}>Templates</button></div>
-  <form className="nt-filters" onSubmit={submitSearch}><div className="nt-search"><input value={searchInput} onChange={e=>setSearchInput(e.target.value)} placeholder={tab==='outbox'?'Cari recipient atau error...':'Cari template key atau nama...'}/><button type="submit">Search</button></div>
+  <form className="nt-filters" onSubmit={submitSearch}><div className="nt-search"><input value={searchInput} onChange={e=>setSearchInput(e.target.value)} placeholder={tab==='outbox'?'Cari recipient atau error...':'Cari event key, nama, atau subject...'}/><button type="submit">Search</button></div>
    <select value={channel} onChange={e=>{setChannel(e.target.value);setPage(1)}}><option value="all">All Channel</option><option value="in_app">In-App</option><option value="email">Email</option><option value="whatsapp">WhatsApp</option></select>
    {tab==='outbox'&&<select value={status} onChange={e=>{setStatus(e.target.value);setPage(1)}}><option value="all">All Status</option><option value="queued">Queued</option><option value="processing">Processing</option><option value="sent">Sent</option><option value="failed">Failed</option><option value="cancelled">Cancelled</option></select>}
    <select value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));setPage(1)}}><option value={10}>10 / page</option><option value={25}>25 / page</option><option value={50}>50 / page</option><option value={100}>100 / page</option></select>
@@ -179,7 +187,7 @@ export default function AdminNotificationsPage(){
   {tab==='outbox'?<><div className="nt-table-wrap"><table className="nt-table"><thead><tr><th>RECIPIENT</th><th>CHANNEL</th><th>STATUS</th><th>ATTEMPTS</th><th>CREATED</th><th>SENT</th><th>ERROR</th><th>ACTION</th></tr></thead><tbody>
    {!loading&&rows.map(r=><tr key={r.id}><td><span className="nt-title">{String(r.recipient??r.recipient_address??r.destination??r.to_address??'—')}</span><span className="nt-sub">{r.id}</span></td><td><span className={`nt-badge ${r.channel}`}>{r.channel}</span></td><td><span className={`nt-badge ${r.status}`}>{r.status}</span></td><td>{Number(r.attempt_count??r.attempts??0)}</td><td>{dt(r.created_at)}</td><td>{dt(r.sent_at)}</td><td>{r.last_error||'—'}</td><td>{r.status==='failed'?<button className="nt-small" onClick={()=>void retry(r.id)}>Retry</button>:'—'}</td></tr>)}
   </tbody></table>{loading&&<div className="nt-empty">Loading notification outbox...</div>}{!loading&&rows.length===0&&<div className="nt-empty">Belum ada notification yang sesuai filter.</div>}</div></>:
-  <div className="nt-template-grid">{!loading&&templates.map(t=><div className="nt-template" key={t.id}><span className={`nt-badge ${t.channel}`}>{t.channel}</span><h3>{t.name||t.template_key||'Template'}</h3><p>{t.subject_template||t.body_template?.slice(0,90)||'Template notification'}</p><div className="nt-template-footer"><span>{t.is_active===false?'Inactive':'Active'}</span><span>{dt(t.updated_at)}</span></div></div>)}{loading&&<div className="nt-empty">Loading templates...</div>}{!loading&&templates.length===0&&<div className="nt-empty">Belum ada template yang sesuai filter.</div>}</div>}
+  <div className="nt-template-grid">{!loading&&templates.map(t=><div className="nt-template" key={t.id}><span className={`nt-badge ${t.channel}`}>{t.channel}</span><h3>{t.name||t.event_key||'Template'}</h3><p><strong>{t.event_key||'—'}</strong><br/>{t.subject_template||t.body_template?.slice(0,90)||'Template notification'}</p><div className="nt-template-footer"><span>{t.active===false?'Inactive':'Active'}</span><span>{dt(t.updated_at)}</span></div></div>)}{loading&&<div className="nt-empty">Loading templates...</div>}{!loading&&templates.length===0&&<div className="nt-empty">Belum ada template yang sesuai filter.</div>}</div>}
 
   <div className="nt-pagination"><span>Menampilkan {start}–{end} dari {total} data</span><div className="nt-pages"><button disabled={page<=1||loading} onClick={()=>setPage(v=>Math.max(1,v-1))}>← Previous</button><strong>Page {page} / {pages}</strong><button disabled={page>=pages||loading} onClick={()=>setPage(v=>Math.min(pages,v+1))}>Next →</button></div></div>
  </section>
