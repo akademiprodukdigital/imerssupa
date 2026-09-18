@@ -38,6 +38,26 @@ type ProductForm = {
   slug: string
   price: string
   status: string
+  category_id: string
+  video_url: string
+}
+
+type ProductCategory = {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  is_active: boolean
+  sort_order: number
+}
+
+type ProductMedia = {
+  id: string
+  product_id: string
+  media_type: 'image' | 'video'
+  media_url: string
+  sort_order: number
+  is_primary: boolean
 }
 
 type AccessRow = {
@@ -63,6 +83,11 @@ export default function AdminProductsPage() {
   const [email, setEmail] = useState('')
   const [products, setProducts] = useState<Product[]>([])
   const [accessRows, setAccessRows] = useState<AccessRow[]>([])
+  const [categories, setCategories] = useState<ProductCategory[]>([])
+  const [mediaRows, setMediaRows] = useState<ProductMedia[]>([])
+  const [categoryManager, setCategoryManager] = useState(false)
+  const [categoryName, setCategoryName] = useState('')
+  const [imageUrls, setImageUrls] = useState<string[]>([''])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -73,7 +98,7 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<Product | null>(null)
   const [createMode, setCreateMode] = useState(false)
-  const [form, setForm] = useState<ProductForm>({ name: '', slug: '', price: '0', status: 'draft' })
+  const [form, setForm] = useState<ProductForm>({ name: '', slug: '', price: '0', status: 'draft', category_id: '', video_url: '' })
 
   const load = async () => {
     setLoading(true)
@@ -108,9 +133,11 @@ export default function AdminProductsPage() {
     }
     setMe(profile)
 
-    const [productsResult, accessResult] = await Promise.all([
+    const [productsResult, accessResult, categoriesResult, mediaResult] = await Promise.all([
       supabase.from('products').select('*').order('created_at', { ascending: false }),
       supabase.from('member_access').select('id,user_id,product_id,access_status,expires_at'),
+      supabase.from('product_categories').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true }),
+      supabase.from('product_media').select('*').order('sort_order', { ascending: true }),
     ])
 
     const errors: string[] = []
@@ -119,6 +146,12 @@ export default function AdminProductsPage() {
 
     if (accessResult.error) errors.push(`Access: ${accessResult.error.message}`)
     else setAccessRows((accessResult.data ?? []) as AccessRow[])
+
+    if (categoriesResult.error) errors.push(`Categories: ${categoriesResult.error.message}`)
+    else setCategories((categoriesResult.data ?? []) as ProductCategory[])
+
+    if (mediaResult.error) errors.push(`Media: ${mediaResult.error.message}`)
+    else setMediaRows((mediaResult.data ?? []) as ProductMedia[])
 
     if (errors.length) setError(errors.join(' • '))
     setLoading(false)
@@ -155,7 +188,8 @@ export default function AdminProductsPage() {
     setCreateMode(true)
     setError('')
     setNotice('')
-    setForm({ name: '', slug: '', price: '0', status: 'draft' })
+    setForm({ name: '', slug: '', price: '0', status: 'draft', category_id: '', video_url: '' })
+    setImageUrls([''])
   }
 
   const openEdit = (product: Product) => {
@@ -163,12 +197,18 @@ export default function AdminProductsPage() {
     setCreateMode(false)
     setError('')
     setNotice('')
+    const productMedia = mediaRows.filter((m) => m.product_id === product.id)
+    const images = productMedia.filter((m) => m.media_type === 'image').sort((a,b) => a.sort_order - b.sort_order)
+    const video = productMedia.find((m) => m.media_type === 'video')
     setForm({
       name: product.name,
       slug: product.slug,
       price: String(product.price ?? 0),
       status: product.status ?? 'draft',
+      category_id: (product as any).category_id ?? '',
+      video_url: video?.media_url ?? '',
     })
+    setImageUrls(images.length ? images.map((m) => m.media_url) : [''])
   }
 
   const saveProduct = async (event: FormEvent) => {
@@ -182,6 +222,9 @@ export default function AdminProductsPage() {
       p_slug: form.slug.trim(),
       p_price: Number(form.price || 0),
       p_status: form.status,
+      p_category_id: form.category_id || null,
+      p_video_url: form.video_url.trim() || null,
+      p_image_urls: imageUrls.map((x) => x.trim()).filter(Boolean),
     }
 
     if (!payload.p_name || !payload.p_slug) {
@@ -191,8 +234,8 @@ export default function AdminProductsPage() {
     }
 
     const result = createMode
-      ? await supabase.rpc('admin_create_product_basic', payload)
-      : await supabase.rpc('admin_update_product_basic', { p_product_id: selected?.id, ...payload })
+      ? await supabase.rpc('admin_create_product_with_media', payload)
+      : await supabase.rpc('admin_update_product_with_media', { p_product_id: selected?.id, ...payload })
 
     if (result.error) {
       setError(`Gagal menyimpan produk: ${result.error.message}`)
@@ -221,6 +264,70 @@ export default function AdminProductsPage() {
     }
     setSaving(false)
   }
+
+  const saveCategory = async () => {
+    const name = categoryName.trim()
+    if (!name) return
+    setSaving(true)
+    setError('')
+    const { error: categoryError } = await supabase.rpc('admin_upsert_product_category', {
+      p_category_id: null,
+      p_name: name,
+      p_slug: slugify(name),
+      p_description: null,
+      p_is_active: true,
+      p_sort_order: categories.length,
+    })
+    if (categoryError) setError(`Gagal menambah kategori: ${categoryError.message}`)
+    else {
+      setCategoryName('')
+      setNotice('Kategori berhasil ditambahkan.')
+      await load()
+    }
+    setSaving(false)
+  }
+
+  const toggleCategory = async (category: ProductCategory) => {
+    setSaving(true)
+    setError('')
+    const { error: categoryError } = await supabase.rpc('admin_upsert_product_category', {
+      p_category_id: category.id,
+      p_name: category.name,
+      p_slug: category.slug,
+      p_description: category.description,
+      p_is_active: !category.is_active,
+      p_sort_order: category.sort_order,
+    })
+    if (categoryError) setError(`Gagal mengubah kategori: ${categoryError.message}`)
+    else await load()
+    setSaving(false)
+  }
+
+  const deleteCategory = async (category: ProductCategory) => {
+    if (!window.confirm(`Hapus kategori "${category.name}"? Kategori yang masih dipakai produk akan ditolak demi keamanan.`)) return
+    setSaving(true)
+    setError('')
+    const { error: categoryError } = await supabase.rpc('admin_delete_product_category_safe', { p_category_id: category.id })
+    if (categoryError) setError(`Kategori tidak dapat dihapus: ${categoryError.message}`)
+    else {
+      setNotice('Kategori berhasil dihapus.')
+      await load()
+    }
+    setSaving(false)
+  }
+
+  const addImageField = () => {
+    if (imageUrls.length < 9) setImageUrls((rows) => [...rows, ''])
+  }
+
+  const updateImage = (index: number, value: string) =>
+    setImageUrls((rows) => rows.map((row, i) => i === index ? value : row))
+
+  const removeImage = (index: number) =>
+    setImageUrls((rows) => rows.length === 1 ? [''] : rows.filter((_, i) => i !== index))
+
+  const categoryNameById = (id?: string | null) =>
+    categories.find((c) => c.id === id)?.name ?? 'Tanpa kategori'
 
   const logout = async () => {
     await supabase.auth.signOut()
@@ -281,6 +388,7 @@ export default function AdminProductsPage() {
           <header>
             <div><div className="eyebrow">PRODUCT MANAGEMENT</div><h1>Products</h1><p>Kelola katalog produk digital, harga, status publikasi, dan jumlah member yang memiliki akses.</p></div>
             <div style={{display:'flex',gap:8}}>
+              <button className="refresh" onClick={() => setCategoryManager(true)}>▦ Kategori</button>
               <button className="refresh" onClick={() => void load()} disabled={loading}>↻ Refresh</button>
               <button className="primary" onClick={openCreate}>＋ Tambah Produk</button>
             </div>
@@ -312,14 +420,15 @@ export default function AdminProductsPage() {
 
             <div className="table-wrap">
               <table>
-                <thead><tr><th>PRODUCT</th><th>TYPE</th><th>PRICE</th><th>STATUS</th><th>MEMBER ACCESS</th><th>CREATED</th><th>ACTION</th></tr></thead>
+                <thead><tr><th>PRODUCT</th><th>CATEGORY</th><th>MEDIA</th><th>PRICE</th><th>STATUS</th><th>MEMBER ACCESS</th><th>CREATED</th><th>ACTION</th></tr></thead>
                 <tbody>
-                  {loading ? <tr><td colSpan={7} className="empty">Loading products...</td></tr> :
-                   visible.length === 0 ? <tr><td colSpan={7} className="empty">Belum ada produk yang sesuai filter.</td></tr> :
+                  {loading ? <tr><td colSpan={8} className="empty">Loading products...</td></tr> :
+                   visible.length === 0 ? <tr><td colSpan={8} className="empty">Belum ada produk yang sesuai filter.</td></tr> :
                    visible.map((product) => (
                     <tr key={product.id}>
                       <td><div className="member-cell"><span className="member-avatar">P</span><div><strong>{product.name}</strong><small>/{product.slug}</small></div></div></td>
-                      <td>{pretty(product.type || 'digital')}</td>
+                      <td>{categoryNameById((product as any).category_id)}</td>
+                      <td><div className="access-list"><strong>{mediaRows.filter((m) => m.product_id === product.id && m.media_type === 'image').length} gambar</strong><small>{mediaRows.some((m) => m.product_id === product.id && m.media_type === 'video') ? 'Video tersedia' : 'Tanpa video'}</small></div></td>
                       <td><strong style={{color:'#26344d'}}>{rupiah(product.price)}</strong></td>
                       <td><span className={`badge ${product.status || 'draft'}`}>{pretty(product.status || 'draft')}</span></td>
                       <td><div className="access-list"><strong>{memberCount(product.id)} member</strong><small>memiliki akses aktif</small></div></td>
@@ -339,6 +448,36 @@ export default function AdminProductsPage() {
         </div>
       </main>
 
+      {categoryManager && (
+        <div className="modal-backdrop" onMouseDown={() => !saving && setCategoryManager(false)}>
+          <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <div><div className="eyebrow">PRODUCT CATEGORIES</div><h2>Kategori Produk</h2><p>Kategori dinamis untuk katalog produk. Bisa ditambah, aktif/nonaktif, dan dihapus aman.</p></div>
+              <button className="close" onClick={() => setCategoryManager(false)} disabled={saving}>×</button>
+            </div>
+            <div style={{padding:'20px 22px'}}>
+              <div style={{display:'flex',gap:8,marginBottom:14}}>
+                <input style={{height:42,flex:1,border:'1px solid #dce1ec',borderRadius:10,padding:'0 11px',fontSize:12}} value={categoryName} onChange={(e) => setCategoryName(e.target.value)} placeholder="Nama kategori baru..." />
+                <button className="primary" type="button" onClick={() => void saveCategory()} disabled={saving || !categoryName.trim()}>＋ Tambah</button>
+              </div>
+              <div className="member-info">
+                <span>DAFTAR KATEGORI</span>
+                {categories.length === 0 ? <p>Belum ada kategori.</p> : categories.map((category) => (
+                  <div key={category.id} style={{alignItems:'center'}}>
+                    <span><strong>{category.name}</strong><small style={{display:'block'}}>/{category.slug}</small></span>
+                    <span style={{display:'flex',gap:6,alignItems:'center'}}>
+                      <span className={`badge ${category.is_active ? 'published' : 'draft'}`}>{category.is_active ? 'Active' : 'Inactive'}</span>
+                      <button className="action" type="button" onClick={() => void toggleCategory(category)}>{category.is_active ? 'Nonaktifkan' : 'Aktifkan'}</button>
+                      <button className="action" type="button" onClick={() => void deleteCategory(category)}>Hapus</button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {(selected || createMode) && (
         <div className="modal-backdrop" onMouseDown={() => !saving && (setSelected(null), setCreateMode(false))}>
           <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -350,6 +489,28 @@ export default function AdminProductsPage() {
               <label>Nama Produk<input value={form.name} onChange={(e) => setForm({...form,name:e.target.value,slug:createMode?slugify(e.target.value):form.slug})} placeholder="Nama produk" /></label>
               <label>Slug<input value={form.slug} onChange={(e) => setForm({...form,slug:slugify(e.target.value)})} placeholder="slug-produk" /></label>
               <label>Harga<input type="number" min="0" value={form.price} onChange={(e) => setForm({...form,price:e.target.value})} /></label>
+              <label>Kategori
+                <select value={form.category_id} onChange={(e) => setForm({...form,category_id:e.target.value})}>
+                  <option value="">Tanpa kategori</option>
+                  {categories.filter((c) => c.is_active || c.id === form.category_id).map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                </select>
+              </label>
+              <div className="member-info">
+                <span>GALLERY PRODUK — MAKSIMAL 9 GAMBAR</span>
+                <p>Gambar pertama otomatis menjadi cover utama. Paste URL gambar HTTPS.</p>
+                {imageUrls.map((url, index) => (
+                  <div key={index} style={{alignItems:'center'}}>
+                    <strong style={{minWidth:74}}>{index === 0 ? 'Cover' : `Gambar ${index + 1}`}</strong>
+                    <input style={{margin:0,height:38}} value={url} onChange={(e) => updateImage(index,e.target.value)} placeholder="https://.../gambar.jpg" />
+                    <button type="button" className="action" onClick={() => removeImage(index)}>×</button>
+                  </div>
+                ))}
+                <button type="button" className="action" onClick={addImageField} disabled={imageUrls.length >= 9} style={{marginTop:10}}>＋ Tambah Gambar ({imageUrls.length}/9)</button>
+              </div>
+              <label style={{marginTop:13}}>Video Produk (Opsional)
+                <input value={form.video_url} onChange={(e) => setForm({...form,video_url:e.target.value})} placeholder="YouTube, Vimeo, .mp4 atau .webm" />
+                <small style={{display:'block',marginTop:5,color:'#8994a8',fontWeight:500}}>Kosongkan jika produk tidak memiliki video. Video hanya tampil di frontend bila URL diisi.</small>
+              </label>
               <label>Status<select value={form.status} onChange={(e) => setForm({...form,status:e.target.value})}><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
               {!createMode && selected && <div className="member-info"><span>PRODUCT SUMMARY</span><div><strong>Active Member Access</strong><small>{memberCount(selected.id)} member</small></div><div><strong>Product ID</strong><small>{selected.id}</small></div></div>}
               <div className="modal-actions">
