@@ -1857,6 +1857,8 @@ function Styles() {
         position: sticky;
         top: 0;
         height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
         padding: 23px 17px 17px;
         display: flex;
         flex-direction: column;
