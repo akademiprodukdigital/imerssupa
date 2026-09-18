@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js'
 const supabase=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!)
 
 type Profile={full_name?:string|null;avatar_url?:string|null;role?:string|null}
-type Outbox={id:string;notification_id?:string|null;channel:string;status:string;recipient?:string|null;attempt_count?:number|null;last_error?:string|null;created_at?:string|null;sent_at?:string|null}
+type Outbox={id:string;channel:string;status:string;recipient?:string|null;recipient_address?:string|null;destination?:string|null;to_address?:string|null;attempt_count?:number|null;attempts?:number|null;last_error?:string|null;created_at?:string|null;sent_at?:string|null;notification_id?:string|null;notification?:string|null;[key:string]:unknown}
 type Template={id:string;template_key?:string|null;name?:string|null;channel:string;subject_template?:string|null;body_template?:string|null;is_active?:boolean|null;updated_at?:string|null}
 const dt=(v?:string|null)=>v?new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):'—'
 
@@ -45,12 +45,21 @@ export default function AdminNotificationsPage(){
     const {data,error,count}=await q;if(error)throw error
     setTemplates((data||[]) as Template[]);setRows([]);setTotal(count||0)
    }else{
-    let q=supabase.from('notification_outbox').select('id,notification_id,channel,status,recipient,attempt_count,last_error,created_at,sent_at',{count:'exact'}).order('created_at',{ascending:false}).range((page-1)*pageSize,page*pageSize-1)
+    // STEP 25 notification_outbox tidak memiliki kolom notification_id.
+    // Ambil schema asli dengan select('*') agar frontend tidak hardcode kolom yang tidak ada.
+    let q=supabase.from('notification_outbox').select('*').order('created_at',{ascending:false}).limit(1000)
     if(channel!=='all')q=q.eq('channel',channel)
     if(status!=='all')q=q.eq('status',status)
-    if(search.trim()){const x=search.trim().replaceAll(',',' ');q=q.or(`recipient.ilike.%${x}%,last_error.ilike.%${x}%`)}
-    const {data,error,count}=await q;if(error)throw error
-    setRows((data||[]) as Outbox[]);setTemplates([]);setTotal(count||0)
+    const {data,error}=await q;if(error)throw error
+    const all=((data||[]) as Outbox[])
+    const needle=search.trim().toLowerCase()
+    const filtered=!needle?all:all.filter(r=>{
+     const recipient=String(r.recipient??r.recipient_address??r.destination??r.to_address??'').toLowerCase()
+     const err=String(r.last_error??'').toLowerCase()
+     return recipient.includes(needle)||err.includes(needle)
+    })
+    const from=(page-1)*pageSize
+    setRows(filtered.slice(from,from+pageSize));setTemplates([]);setTotal(filtered.length)
    }
   }catch(e:any){setError(e?.message||'Gagal memuat notification data.');setRows([]);setTemplates([]);setTotal(0)}
   finally{setLoading(false)}
@@ -168,7 +177,7 @@ export default function AdminNotificationsPage(){
   </form>
 
   {tab==='outbox'?<><div className="nt-table-wrap"><table className="nt-table"><thead><tr><th>RECIPIENT</th><th>CHANNEL</th><th>STATUS</th><th>ATTEMPTS</th><th>CREATED</th><th>SENT</th><th>ERROR</th><th>ACTION</th></tr></thead><tbody>
-   {!loading&&rows.map(r=><tr key={r.id}><td><span className="nt-title">{r.recipient||'—'}</span><span className="nt-sub">{r.notification_id||r.id}</span></td><td><span className={`nt-badge ${r.channel}`}>{r.channel}</span></td><td><span className={`nt-badge ${r.status}`}>{r.status}</span></td><td>{r.attempt_count||0}</td><td>{dt(r.created_at)}</td><td>{dt(r.sent_at)}</td><td>{r.last_error||'—'}</td><td>{r.status==='failed'?<button className="nt-small" onClick={()=>void retry(r.id)}>Retry</button>:'—'}</td></tr>)}
+   {!loading&&rows.map(r=><tr key={r.id}><td><span className="nt-title">{String(r.recipient??r.recipient_address??r.destination??r.to_address??'—')}</span><span className="nt-sub">{r.id}</span></td><td><span className={`nt-badge ${r.channel}`}>{r.channel}</span></td><td><span className={`nt-badge ${r.status}`}>{r.status}</span></td><td>{Number(r.attempt_count??r.attempts??0)}</td><td>{dt(r.created_at)}</td><td>{dt(r.sent_at)}</td><td>{r.last_error||'—'}</td><td>{r.status==='failed'?<button className="nt-small" onClick={()=>void retry(r.id)}>Retry</button>:'—'}</td></tr>)}
   </tbody></table>{loading&&<div className="nt-empty">Loading notification outbox...</div>}{!loading&&rows.length===0&&<div className="nt-empty">Belum ada notification yang sesuai filter.</div>}</div></>:
   <div className="nt-template-grid">{!loading&&templates.map(t=><div className="nt-template" key={t.id}><span className={`nt-badge ${t.channel}`}>{t.channel}</span><h3>{t.name||t.template_key||'Template'}</h3><p>{t.subject_template||t.body_template?.slice(0,90)||'Template notification'}</p><div className="nt-template-footer"><span>{t.is_active===false?'Inactive':'Active'}</span><span>{dt(t.updated_at)}</span></div></div>)}{loading&&<div className="nt-empty">Loading templates...</div>}{!loading&&templates.length===0&&<div className="nt-empty">Belum ada template yang sesuai filter.</div>}</div>}
 
