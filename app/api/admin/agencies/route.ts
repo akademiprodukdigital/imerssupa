@@ -11,12 +11,8 @@ export async function POST(request: NextRequest) {
 
     if (!url || !anonKey || !serviceKey) {
       return NextResponse.json(
-        {
-          error: 'Konfigurasi server Supabase belum lengkap.',
-        },
-        {
-          status: 500,
-        }
+        { error: 'Konfigurasi server Supabase belum lengkap.' },
+        { status: 500 }
       )
     }
 
@@ -28,18 +24,15 @@ export async function POST(request: NextRequest) {
 
     if (!token) {
       return NextResponse.json(
-        {
-          error: 'Unauthorized.',
-        },
-        {
-          status: 401,
-        }
+        { error: 'Unauthorized.' },
+        { status: 401 }
       )
     }
 
-    // =========================================================
-    // VALIDASI SESSION USER YANG MEMANGGIL API
-    // =========================================================
+    // ======================================================
+    // CALLER CLIENT
+    // Memakai JWT user yang sedang login.
+    // ======================================================
 
     const caller = createClient(url, anonKey, {
       global: {
@@ -61,108 +54,120 @@ export async function POST(request: NextRequest) {
     if (authError || !authData.user) {
       return NextResponse.json(
         {
-          error: 'Session tidak valid.',
+          error: `Session tidak valid${
+            authError?.message
+              ? `: ${authError.message}`
+              : '.'
+          }`,
         },
-        {
-          status: 401,
-        }
+        { status: 401 }
       )
     }
 
-    // =========================================================
-    // SERVICE ROLE CLIENT
-    // HANYA BERJALAN DI SERVER
-    // =========================================================
-
-    const admin = createClient(url, serviceKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    })
-
-    // =========================================================
-    // PASTIKAN PEMANGGIL ADALAH SUPER ADMIN AKTIF
-    // =========================================================
+    // ======================================================
+    // VALIDASI SUPER ADMIN
+    //
+    // Penting:
+    // Validasi memakai JWT caller supaya auth.uid()
+    // terbaca dengan benar oleh Supabase.
+    // ======================================================
 
     const {
-      data: profile,
-      error: profileError,
-    } = await admin
-      .from('profiles')
-      .select('role,status')
-      .eq('id', authData.user.id)
-      .maybeSingle()
+      data: isSuperAdmin,
+      error: roleError,
+    } = await caller.rpc('is_imerssupa_super_admin')
 
-    if (
-      profileError ||
-      profile?.role !== 'super_admin' ||
-      profile?.status !== 'active'
-    ) {
+    if (roleError) {
+      return NextResponse.json(
+        {
+          error:
+            `Gagal memvalidasi Super Admin: ${roleError.message}`,
+        },
+        { status: 500 }
+      )
+    }
+
+    if (isSuperAdmin !== true) {
       return NextResponse.json(
         {
           error: 'Super Admin access required.',
         },
-        {
-          status: 403,
-        }
+        { status: 403 }
       )
     }
 
-    // =========================================================
-    // AMBIL FORM
-    // =========================================================
+    // ======================================================
+    // FORM DATA
+    // ======================================================
 
     const body = await request.json()
 
-    const fullName = String(body.full_name || '').trim()
-    const email = String(body.email || '')
+    const fullName = String(
+      body.full_name || ''
+    ).trim()
+
+    const email = String(
+      body.email || ''
+    )
       .trim()
       .toLowerCase()
 
-    const phone = String(body.phone || '').trim()
-    const password = String(body.password || '')
+    const phone = String(
+      body.phone || ''
+    ).trim()
 
-    // =========================================================
-    // VALIDASI
-    // =========================================================
+    const password = String(
+      body.password || ''
+    )
 
     if (!fullName) {
       return NextResponse.json(
         {
-          error: 'Nama Agency wajib diisi.',
+          error: 'Nama Agency / Pemilik wajib diisi.',
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       )
     }
 
     if (!email) {
       return NextResponse.json(
         {
-          error: 'Email Agency wajib diisi.',
+          error: 'Email Login wajib diisi.',
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       )
     }
 
     if (password.length < 8) {
       return NextResponse.json(
         {
-          error: 'Password minimal 8 karakter.',
+          error: 'Password Awal minimal 8 karakter.',
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       )
     }
 
-    // =========================================================
-    // BUAT USER DI SUPABASE AUTH
-    // =========================================================
+    // ======================================================
+    // SERVICE ROLE CLIENT
+    //
+    // Hanya dipakai SERVER-SIDE untuk membuat Auth User.
+    // Key ini TIDAK dikirim ke browser.
+    // ======================================================
+
+    const admin = createClient(
+      url,
+      serviceKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    )
+
+    // ======================================================
+    // CREATE SUPABASE AUTH USER
+    // ======================================================
 
     const {
       data: created,
@@ -180,24 +185,27 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    if (createError || !created.user) {
+    if (
+      createError ||
+      !created.user
+    ) {
       return NextResponse.json(
         {
           error:
-            createError?.message ||
-            'Gagal membuat akun Agency.',
+            `Supabase Auth gagal membuat Agency: ${
+              createError?.message ||
+              'Unknown error'
+            }`,
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       )
     }
 
     const userId = created.user.id
 
-    // =========================================================
-    // BUAT / UPDATE PROFILE SEBAGAI AGENCY
-    // =========================================================
+    // ======================================================
+    // CREATE / UPDATE PROFILE AGENCY
+    // ======================================================
 
     const {
       error: upsertError,
@@ -206,43 +214,57 @@ export async function POST(request: NextRequest) {
       .upsert(
         {
           id: userId,
+
           full_name: fullName,
-          phone: phone || null,
+
+          phone:
+            phone ||
+            null,
+
           role: 'agency',
+
           status: 'active',
-          updated_at: new Date().toISOString(),
+
+          updated_at:
+            new Date().toISOString(),
         },
         {
           onConflict: 'id',
         }
       )
 
-    // =========================================================
-    // ROLLBACK AUTH JIKA PROFILE GAGAL
-    // Supaya tidak ada akun setengah jadi.
-    // =========================================================
+    // ======================================================
+    // ROLLBACK
+    //
+    // Kalau profile gagal dibuat,
+    // jangan meninggalkan Auth User setengah jadi.
+    // ======================================================
 
     if (upsertError) {
-      await admin.auth.admin.deleteUser(userId)
+      await admin.auth.admin.deleteUser(
+        userId
+      )
 
       return NextResponse.json(
         {
-          error: `Profile Agency gagal dibuat: ${upsertError.message}`,
+          error:
+            `Profile Agency gagal dibuat: ${upsertError.message}`,
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       )
     }
 
-    // =========================================================
+    // ======================================================
     // SUCCESS
-    // =========================================================
+    // ======================================================
 
     return NextResponse.json({
       ok: true,
+
       user_id: userId,
-      message: 'Agency berhasil dibuat.',
+
+      message:
+        'Agency berhasil dibuat.',
     })
   } catch (error: unknown) {
     const message =
