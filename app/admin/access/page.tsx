@@ -128,7 +128,6 @@ export default function AdminAccessPage() {
         @media(max-width:520px){.stats{grid-template-columns:1fr}.mini-profile span:last-child{display:none}.panel-head{align-items:flex-start;flex-direction:column}.modal-backdrop{padding:10px}}
       `}</style>
     </div>
-  )
 }
 
 function pretty(value: string) {
