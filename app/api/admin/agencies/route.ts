@@ -16,11 +16,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const authHeader = request.headers.get('authorization') || ''
+    const authHeader =
+      request.headers.get('authorization') || ''
 
-    const token = authHeader.startsWith('Bearer ')
-      ? authHeader.slice(7)
-      : ''
+    const token =
+      authHeader.startsWith('Bearer ')
+        ? authHeader.slice(7)
+        : ''
 
     if (!token) {
       return NextResponse.json(
@@ -29,11 +31,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ======================================================
-    // CALLER CLIENT
-    // Memakai JWT user yang sedang login.
-    // ======================================================
-
+    // Client dengan JWT Super Admin yang sedang login.
     const caller = createClient(url, anonKey, {
       global: {
         headers: {
@@ -64,18 +62,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ======================================================
-    // VALIDASI SUPER ADMIN
-    //
-    // Penting:
-    // Validasi memakai JWT caller supaya auth.uid()
-    // terbaca dengan benar oleh Supabase.
-    // ======================================================
-
+    // Validasi Super Admin menggunakan JWT caller.
     const {
       data: isSuperAdmin,
       error: roleError,
-    } = await caller.rpc('is_imerssupa_super_admin')
+    } = await caller.rpc(
+      'is_imerssupa_super_admin'
+    )
 
     if (roleError) {
       return NextResponse.json(
@@ -96,34 +89,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ======================================================
-    // FORM DATA
-    // ======================================================
-
     const body = await request.json()
 
-    const fullName = String(
-      body.full_name || ''
-    ).trim()
+    const fullName =
+      String(body.full_name || '').trim()
 
-    const email = String(
-      body.email || ''
-    )
-      .trim()
-      .toLowerCase()
+    const email =
+      String(body.email || '')
+        .trim()
+        .toLowerCase()
 
-    const phone = String(
-      body.phone || ''
-    ).trim()
+    const phone =
+      String(body.phone || '').trim()
 
-    const password = String(
-      body.password || ''
-    )
+    const password =
+      String(body.password || '')
 
     if (!fullName) {
       return NextResponse.json(
         {
-          error: 'Nama Agency / Pemilik wajib diisi.',
+          error:
+            'Nama Agency / Pemilik wajib diisi.',
         },
         { status: 400 }
       )
@@ -141,19 +127,14 @@ export async function POST(request: NextRequest) {
     if (password.length < 8) {
       return NextResponse.json(
         {
-          error: 'Password Awal minimal 8 karakter.',
+          error:
+            'Password Awal minimal 8 karakter.',
         },
         { status: 400 }
       )
     }
 
-    // ======================================================
-    // SERVICE ROLE CLIENT
-    //
-    // Hanya dipakai SERVER-SIDE untuk membuat Auth User.
-    // Key ini TIDAK dikirim ke browser.
-    // ======================================================
-
+    // Secret key hanya dipakai untuk Supabase Auth Admin API.
     const admin = createClient(
       url,
       serviceKey,
@@ -165,18 +146,13 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // ======================================================
-    // CREATE SUPABASE AUTH USER
-    // ======================================================
-
+    // Buat Supabase Auth User.
     const {
       data: created,
       error: createError,
     } = await admin.auth.admin.createUser({
       email,
       password,
-
-      // Agency langsung dapat login.
       email_confirm: true,
 
       user_metadata: {
@@ -201,46 +177,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const userId = created.user.id
+    const userId =
+      created.user.id
 
     // ======================================================
-    // CREATE / UPDATE PROFILE AGENCY
+    // PROFILE AGENCY
+    //
+    // Tidak lagi direct admin.from('profiles').upsert().
+    // Profile dibuat melalui SECURITY DEFINER RPC
+    // dengan JWT Super Admin.
     // ======================================================
 
     const {
-      error: upsertError,
-    } = await admin
-      .from('profiles')
-      .upsert(
-        {
-          id: userId,
+      error: profileError,
+    } = await caller.rpc(
+      'super_admin_create_agency_profile',
+      {
+        p_user_id: userId,
+        p_full_name: fullName,
+        p_phone: phone || null,
+      }
+    )
 
-          full_name: fullName,
-
-          phone:
-            phone ||
-            null,
-
-          role: 'agency',
-
-          status: 'active',
-
-          updated_at:
-            new Date().toISOString(),
-        },
-        {
-          onConflict: 'id',
-        }
-      )
-
-    // ======================================================
-    // ROLLBACK
-    //
-    // Kalau profile gagal dibuat,
-    // jangan meninggalkan Auth User setengah jadi.
-    // ======================================================
-
-    if (upsertError) {
+    if (profileError) {
+      // Rollback Auth User.
+      // Tidak meninggalkan Agency setengah jadi.
       await admin.auth.admin.deleteUser(
         userId
       )
@@ -248,15 +209,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            `Profile Agency gagal dibuat: ${upsertError.message}`,
+            `Profile Agency gagal dibuat: ${profileError.message}`,
         },
         { status: 500 }
       )
     }
-
-    // ======================================================
-    // SUCCESS
-    // ======================================================
 
     return NextResponse.json({
       ok: true,
