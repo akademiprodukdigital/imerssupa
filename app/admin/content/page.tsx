@@ -30,6 +30,25 @@ type LessonForm = {
   external_url:string; sort_order:number; is_published:boolean; is_preview:boolean
 }
 
+type AccessRow = {
+  id: string
+  user_id: string
+  product_id: string
+  access_status: string | null
+  expires_at: string | null
+}
+
+type Product = {
+  id: string
+  name: string
+}
+
+type EditForm = {
+  full_name: string
+  phone: string
+  status: string
+}
+
 const PAGE_SIZES = [10, 25, 50, 100]
 
 export default function AdminContentPage() {
@@ -110,7 +129,7 @@ export default function AdminContentPage() {
       <nav><p>MAIN MENU</p>
         <button onClick={()=>router.push('/admin')}>⌂ <span>Dashboard</span></button><button onClick={()=>router.push('/admin/members')}>◎ <span>Members</span></button><button onClick={()=>router.push('/admin/products')}>▣ <span>Products</span></button><button className="active">▶ <span>Content</span></button><button onClick={()=>router.push('/admin/access')}>◇ <span>Member Access</span></button><button onClick={()=>router.push('/admin/progress')}>↗ <span>Progress</span></button><button onClick={()=>router.push('/admin/resources')}>◆ <span>Resources</span></button>
         <p>COMMERCE</p><button onClick={()=>router.push('/admin/orders')}>▤ <span>Orders & Transactions</span></button><button onClick={()=>router.push('/admin/payments')}>◫ <span>Payments</span></button><button onClick={()=>router.push('/admin/affiliates')}>⌘ <span>Affiliate & Coupons</span></button><button onClick={()=>router.push('/admin/notifications')}>◌ <span>Notifications</span></button>
-        {me?.role==='super_admin'&&<><p>SUPER ADMIN</p><button onClick={()=>router.push('/admin/administrators')}>♛ <span>Administrators</span></button><button onClick={()=>router.push('/admin/settings')}>⚙ <span>System Settings</span></button><button onClick={()=>router.push('/admin/settings/commerce')}>◈ <span>Commerce Settings</span></button><button onClick={()=>router.push('/admin/security')}>◇ <span>Security / Audit</span></button></>}
+        {me?.role==='super_admin'&&<><p>SUPER ADMIN</p><button onClick={()=>router.push('/admin/agencies')}>♜ <span>Agency Management</span></button><button onClick={()=>router.push('/admin/administrators')}>♛ <span>Administrators</span></button><button onClick={()=>router.push('/admin/settings')}>⚙ <span>System Settings</span></button><button onClick={()=>router.push('/admin/settings/commerce')}>◈ <span>Commerce Settings</span></button><button onClick={()=>router.push('/admin/security')}>◇ <span>Security / Audit</span></button></>}
         <p>ACCOUNT</p><button onClick={()=>router.push('/admin/profile')}>◉ <span>Profile</span></button>
       </nav>
       <div className="sidebar-bottom"><button className="profile-card" onClick={()=>router.push('/admin/profile')}><span className="avatar">{initials}</span><span className="profile-copy"><strong>{me?.full_name||email.split('@')[0]}</strong><small>{email}</small></span></button><button className="logout" onClick={logout}>↗ Keluar</button></div>
