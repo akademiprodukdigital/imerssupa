@@ -13,6 +13,7 @@ type BrandingConfig = {
   copyright_text: string
   logo_url: string
   icon_url: string
+  favicon_url: string
   app_url: string
   heading_font: string
   body_font: string
@@ -25,6 +26,22 @@ type BrandingConfig = {
   login_badge: string
   login_title: string
   login_description: string
+  login_feature_1_icon: string
+  login_feature_1_title: string
+  login_feature_1_text: string
+  login_feature_2_icon: string
+  login_feature_2_title: string
+  login_feature_2_text: string
+  login_feature_3_icon: string
+  login_feature_3_title: string
+  login_feature_3_text: string
+  login_feature_4_icon: string
+  login_feature_4_title: string
+  login_feature_4_text: string
+  login_welcome_badge: string
+  login_form_title: string
+  login_form_description: string
+  login_role_note: string
   show_developer_credit: boolean
 }
 
@@ -43,6 +60,7 @@ const defaults: BrandingConfig = {
   copyright_text: '',
   logo_url: '',
   icon_url: '',
+  favicon_url: '',
   app_url: '',
   heading_font: 'Poppins',
   body_font: 'Inter',
@@ -54,7 +72,23 @@ const defaults: BrandingConfig = {
   card_radius: '20px',
   login_badge: 'DIGITAL MEMBER EXPERIENCE',
   login_title: 'Semua produk digital. Satu member area.',
-  login_description: 'Akses produk, materi pembelajaran dan resource digital Anda dalam satu tempat.',
+  login_description: 'Akses produk, materi pembelajaran, resource, progress belajar dan semua konten digital Anda dalam satu platform.',
+  login_feature_1_icon: '◇',
+  login_feature_1_title: 'Secure Access',
+  login_feature_1_text: 'Akses berdasarkan akun dan entitlement.',
+  login_feature_2_icon: '✓',
+  login_feature_2_title: 'Learning Progress',
+  login_feature_2_text: 'Progress belajar tersimpan otomatis.',
+  login_feature_3_icon: '▶',
+  login_feature_3_title: 'Continue Learning',
+  login_feature_3_text: 'Lanjut langsung ke materi berikutnya.',
+  login_feature_4_icon: '◆',
+  login_feature_4_title: 'Digital Resources',
+  login_feature_4_text: 'Bonus dan resource dalam satu tempat.',
+  login_welcome_badge: 'WELCOME BACK',
+  login_form_title: 'Masuk ke akun Anda',
+  login_form_description: 'Masukkan email dan password untuk melanjutkan ke dashboard.',
+  login_role_note: 'Satu halaman login untuk Member, Agency, Admin dan Super Admin.',
   show_developer_credit: false,
 }
 
@@ -230,7 +264,8 @@ export default function BrandingSettingsPage() {
                 <Field label="Company / Business Name"><input placeholder="Nama perusahaan / brand client" value={config.company_name} onChange={e => patch('company_name', e.target.value)} /></Field>
                 <Field label="Developer / Agency Name"><input placeholder="Opsional" value={config.developer_name} onChange={e => patch('developer_name', e.target.value)} /></Field>
                 <Field label="Global Logo URL"><input placeholder="https://..." value={config.logo_url} onChange={e => patch('logo_url', e.target.value)} /></Field>
-                <Field label="App Icon / Favicon URL"><input placeholder="https://..." value={config.icon_url} onChange={e => patch('icon_url', e.target.value)} /></Field>
+                <Field label="App Icon URL"><input placeholder="https://..." value={config.icon_url} onChange={e => patch('icon_url', e.target.value)} /></Field>
+                <Field label="Browser Favicon URL"><input placeholder="https://domain.com/favicon.png" value={config.favicon_url} onChange={e => patch('favicon_url', e.target.value)} /></Field>
                 <Field label="Copyright / Footer Text" wide><input placeholder="© 2026 Nama Brand. All rights reserved." value={config.copyright_text} onChange={e => patch('copyright_text', e.target.value)} /></Field>
               </div>
 
@@ -303,11 +338,33 @@ export default function BrandingSettingsPage() {
           {tab === 'login' && (
             <div className="appearanceLayout">
               <section className="panel">
-                <SectionTitle title="Login Branding" desc="Copy global untuk halaman autentikasi semua role." />
+                <SectionTitle title="Login Branding & Copywriting" desc="Semua copy halaman login dapat diganti untuk instalasi white-label." />
                 <div className="formStack">
                   <Field label="Login Badge"><input value={config.login_badge} onChange={e => patch('login_badge', e.target.value)} /></Field>
                   <Field label="Login Headline"><textarea rows={3} value={config.login_title} onChange={e => patch('login_title', e.target.value)} /></Field>
                   <Field label="Login Description"><textarea rows={4} value={config.login_description} onChange={e => patch('login_description', e.target.value)} /></Field>
+
+                  <SectionTitle title="Feature Cards" desc="Empat benefit/card di sisi kiri halaman login." />
+                  <div className="grid2">
+                    <Field label="Feature 1 Icon"><input value={config.login_feature_1_icon} onChange={e => patch('login_feature_1_icon', e.target.value)} /></Field>
+                    <Field label="Feature 1 Title"><input value={config.login_feature_1_title} onChange={e => patch('login_feature_1_title', e.target.value)} /></Field>
+                    <Field label="Feature 1 Description" wide><input value={config.login_feature_1_text} onChange={e => patch('login_feature_1_text', e.target.value)} /></Field>
+                    <Field label="Feature 2 Icon"><input value={config.login_feature_2_icon} onChange={e => patch('login_feature_2_icon', e.target.value)} /></Field>
+                    <Field label="Feature 2 Title"><input value={config.login_feature_2_title} onChange={e => patch('login_feature_2_title', e.target.value)} /></Field>
+                    <Field label="Feature 2 Description" wide><input value={config.login_feature_2_text} onChange={e => patch('login_feature_2_text', e.target.value)} /></Field>
+                    <Field label="Feature 3 Icon"><input value={config.login_feature_3_icon} onChange={e => patch('login_feature_3_icon', e.target.value)} /></Field>
+                    <Field label="Feature 3 Title"><input value={config.login_feature_3_title} onChange={e => patch('login_feature_3_title', e.target.value)} /></Field>
+                    <Field label="Feature 3 Description" wide><input value={config.login_feature_3_text} onChange={e => patch('login_feature_3_text', e.target.value)} /></Field>
+                    <Field label="Feature 4 Icon"><input value={config.login_feature_4_icon} onChange={e => patch('login_feature_4_icon', e.target.value)} /></Field>
+                    <Field label="Feature 4 Title"><input value={config.login_feature_4_title} onChange={e => patch('login_feature_4_title', e.target.value)} /></Field>
+                    <Field label="Feature 4 Description" wide><input value={config.login_feature_4_text} onChange={e => patch('login_feature_4_text', e.target.value)} /></Field>
+                  </div>
+
+                  <SectionTitle title="Login Form Copy" desc="Copy di kartu form login dan catatan role." />
+                  <Field label="Welcome Badge"><input value={config.login_welcome_badge} onChange={e => patch('login_welcome_badge', e.target.value)} /></Field>
+                  <Field label="Form Title"><input value={config.login_form_title} onChange={e => patch('login_form_title', e.target.value)} /></Field>
+                  <Field label="Form Description"><textarea rows={3} value={config.login_form_description} onChange={e => patch('login_form_description', e.target.value)} /></Field>
+                  <Field label="Role Note"><input value={config.login_role_note} onChange={e => patch('login_role_note', e.target.value)} /></Field>
                 </div>
               </section>
 
@@ -320,8 +377,8 @@ export default function BrandingSettingsPage() {
                 <label>{config.login_badge}</label>
                 <h3>{config.login_title}</h3>
                 <p>{config.login_description}</p>
-                <div className="fakeInput">Email</div>
-                <div className="fakeInput">Password</div>
+                <div className="fakeInput">{config.login_welcome_badge}</div>
+                <div className="fakeInput">{config.login_form_title}</div>
                 <button>Masuk ke Dashboard</button>
               </div>
             </div>
