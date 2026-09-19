@@ -1857,8 +1857,6 @@ function Styles() {
         position: sticky;
         top: 0;
         height: 100vh;
-        overflow-y: auto;
-        overflow-x: hidden;
         padding: 23px 17px 17px;
         display: flex;
         flex-direction: column;
@@ -3450,30 +3448,30 @@ function Styles() {
       .profile-button strong { font-size: 12px !important; }
       .profile-button small { font-size: 10px !important; }
       .eyebrow { font-size: 10.5px !important; letter-spacing: .16em !important; }
-      .welcome h1 { font-size: clamp(34px, 3vw, 48px) !important; line-height: 1.08 !important; }
-      .welcome p { font-size: 13.5px !important; line-height: 1.7 !important; }
+      .welcome h1 { font-size: 28px !important; line-height: 1.14 !important; letter-spacing: -.7px !important; }
+      .welcome p { font-size: 12px !important; line-height: 1.6 !important; }
       .system-status .online { font-size: 10px !important; }
       .system-status strong { font-size: 11.5px !important; }
-      .stat-card .label, .stat-label { font-size: 11.5px !important; }
-      .stat-card .value, .stat-value { font-size: 30px !important; line-height: 1 !important; }
-      .stat-card .note, .stat-note { font-size: 11px !important; line-height: 1.45 !important; }
-      .section-heading h2, .heading h2 { font-size: 23px !important; }
-      .section-heading p, .heading p { font-size: 12.5px !important; line-height: 1.6 !important; }
-      .quick-card strong, .quick strong { font-size: 13px !important; }
-      .quick-card small, .quick small { font-size: 11px !important; line-height: 1.45 !important; }
-      .panel h3, .card-title { font-size: 18px !important; }
+      .stat-card .label, .stat-label { font-size: 10px !important; }
+      .stat-card .value, .stat-value { font-size: 23px !important; line-height: 1.05 !important; }
+      .stat-card .note, .stat-note { font-size: 10px !important; line-height: 1.45 !important; }
+      .section-heading h2, .heading h2 { font-size: 18px !important; line-height: 1.2 !important; }
+      .section-heading p, .heading p { font-size: 11px !important; line-height: 1.55 !important; }
+      .quick-card strong, .quick strong { font-size: 12px !important; }
+      .quick-card small, .quick small { font-size: 10px !important; line-height: 1.45 !important; }
+      .panel h3, .card-title { font-size: 16px !important; }
       .panel-header a, .panel-header button { font-size: 11px !important; }
-      .list-item strong, .member-row strong, .product-row strong { font-size: 12.5px !important; }
-      .list-item small, .member-row small, .product-row small { font-size: 10.5px !important; }
+      .list-item strong, .member-row strong, .product-row strong { font-size: 11.5px !important; }
+      .list-item small, .member-row small, .product-row small { font-size: 9.5px !important; }
       .status, .badge { font-size: 9.5px !important; }
       .metric-label { font-size: 10px !important; }
-      .metric-value { font-size: 25px !important; }
-      .metric-note { font-size: 11px !important; }
+      .metric-value { font-size: 21px !important; }
+      .metric-note { font-size: 10px !important; }
       .warning { font-size: 12px !important; line-height: 1.55 !important; }
 
       @media (max-width: 900px) {
         .admin-shell { grid-template-columns: 1fr !important; }
-        .welcome h1 { font-size: 32px !important; }
+        .welcome h1 { font-size: 26px !important; }
         .search input { font-size: 14px !important; }
       }
 
