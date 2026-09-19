@@ -3706,8 +3706,19 @@ function Styles() {
       .logout{
         font-size:11px !important;
       }
+      .admin-shell{
+        display:block !important;
+      }
       .main{
         margin-left:270px !important;
+        width:calc(100% - 270px) !important;
+        min-width:0 !important;
+      }
+      @media(max-width:900px){
+        .main{
+          margin-left:0 !important;
+          width:100% !important;
+        }
       }
 
     `}</style>
