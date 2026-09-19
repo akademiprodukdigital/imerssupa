@@ -709,6 +709,7 @@ function Styles() {
         position: sticky;
         top: 0;
         height: 100vh;
+        min-height: 0;
         padding: 23px 17px 17px;
         display: flex;
         flex-direction: column;
@@ -717,6 +718,37 @@ function Styles() {
         background: var(--sidebar-bg);
         backdrop-filter: blur(20px);
         z-index: 30;
+        overflow-y: auto;
+        overflow-x: hidden;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(99, 102, 241, .32) transparent;
+      }
+
+      .sidebar::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .sidebar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .sidebar::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: rgba(99, 102, 241, .28);
+      }
+
+      .sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(99, 102, 241, .46);
+      }
+
+      .sidebar > div:first-child {
+        flex: 0 0 auto;
+      }
+
+      .sidebar-footer {
+        flex: 0 0 auto;
+        margin-top: 18px;
       }
 
       .brand {
