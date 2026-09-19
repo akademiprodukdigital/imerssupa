@@ -3448,30 +3448,30 @@ function Styles() {
       .profile-button strong { font-size: 12px !important; }
       .profile-button small { font-size: 10px !important; }
       .eyebrow { font-size: 10.5px !important; letter-spacing: .16em !important; }
-      .welcome h1 { font-size: 28px !important; line-height: 1.14 !important; letter-spacing: -.7px !important; }
-      .welcome p { font-size: 12px !important; line-height: 1.6 !important; }
+      .welcome h1 { font-size: clamp(34px, 3vw, 48px) !important; line-height: 1.08 !important; }
+      .welcome p { font-size: 13.5px !important; line-height: 1.7 !important; }
       .system-status .online { font-size: 10px !important; }
       .system-status strong { font-size: 11.5px !important; }
-      .stat-card .label, .stat-label { font-size: 10px !important; }
-      .stat-card .value, .stat-value { font-size: 23px !important; line-height: 1.05 !important; }
-      .stat-card .note, .stat-note { font-size: 10px !important; line-height: 1.45 !important; }
-      .section-heading h2, .heading h2 { font-size: 18px !important; line-height: 1.2 !important; }
-      .section-heading p, .heading p { font-size: 11px !important; line-height: 1.55 !important; }
-      .quick-card strong, .quick strong { font-size: 12px !important; }
-      .quick-card small, .quick small { font-size: 10px !important; line-height: 1.45 !important; }
-      .panel h3, .card-title { font-size: 16px !important; }
+      .stat-card .label, .stat-label { font-size: 11.5px !important; }
+      .stat-card .value, .stat-value { font-size: 30px !important; line-height: 1 !important; }
+      .stat-card .note, .stat-note { font-size: 11px !important; line-height: 1.45 !important; }
+      .section-heading h2, .heading h2 { font-size: 23px !important; }
+      .section-heading p, .heading p { font-size: 12.5px !important; line-height: 1.6 !important; }
+      .quick-card strong, .quick strong { font-size: 13px !important; }
+      .quick-card small, .quick small { font-size: 11px !important; line-height: 1.45 !important; }
+      .panel h3, .card-title { font-size: 18px !important; }
       .panel-header a, .panel-header button { font-size: 11px !important; }
-      .list-item strong, .member-row strong, .product-row strong { font-size: 11.5px !important; }
-      .list-item small, .member-row small, .product-row small { font-size: 9.5px !important; }
+      .list-item strong, .member-row strong, .product-row strong { font-size: 12.5px !important; }
+      .list-item small, .member-row small, .product-row small { font-size: 10.5px !important; }
       .status, .badge { font-size: 9.5px !important; }
       .metric-label { font-size: 10px !important; }
-      .metric-value { font-size: 21px !important; }
-      .metric-note { font-size: 10px !important; }
+      .metric-value { font-size: 25px !important; }
+      .metric-note { font-size: 11px !important; }
       .warning { font-size: 12px !important; line-height: 1.55 !important; }
 
       @media (max-width: 900px) {
         .admin-shell { grid-template-columns: 1fr !important; }
-        .welcome h1 { font-size: 26px !important; }
+        .welcome h1 { font-size: 32px !important; }
         .search input { font-size: 14px !important; }
       }
 
@@ -3556,6 +3556,160 @@ function Styles() {
         .profile-drawer .info-row { align-items: flex-start !important; flex-direction: column !important; gap: 5px !important; }
         .profile-drawer .info-row strong { max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere !important; }
       }
+      /* ===== ADMIN SIDEBAR EXACT MATCH TO OTHER ADMIN PAGES ===== */
+      .sidebar{
+        position:fixed !important;
+        inset:0 auto 0 0 !important;
+        width:270px !important;
+        height:100vh !important;
+        padding:24px 18px 18px !important;
+        background:rgba(249,251,255,.92) !important;
+        border-right:1px solid #e4e8f3 !important;
+        display:flex !important;
+        flex-direction:column !important;
+        justify-content:space-between !important;
+        z-index:30 !important;
+        overflow-y:auto !important;
+        overflow-x:hidden !important;
+        backdrop-filter:none !important;
+      }
+      .brand{
+        display:flex !important;
+        align-items:center !important;
+        gap:11px !important;
+        margin:0 0 22px !important;
+      }
+      .brand-logo{
+        width:42px !important;
+        height:42px !important;
+        border-radius:13px !important;
+        font-size:18px !important;
+      }
+      .brand strong{
+        display:block !important;
+        font-size:17px !important;
+        line-height:1.1 !important;
+        letter-spacing:0 !important;
+      }
+      .brand span{
+        display:block !important;
+        font-size:10px !important;
+        line-height:1.2 !important;
+        letter-spacing:.12em !important;
+        color:#66738e !important;
+        font-weight:800 !important;
+        margin-top:3px !important;
+      }
+      .role-card{
+        margin:0 0 13px !important;
+        padding:13px !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:10px !important;
+        border:1px solid #dfe3ef !important;
+        border-radius:15px !important;
+        background:linear-gradient(110deg,rgba(226,234,255,.85),rgba(249,246,255,.9)) !important;
+      }
+      .role-icon{
+        width:34px !important;
+        height:34px !important;
+        border-radius:10px !important;
+        background:#e2e5ff !important;
+        color:#7165f5 !important;
+      }
+      .role-card span{
+        display:block !important;
+        font-size:10px !important;
+        line-height:1.2 !important;
+        letter-spacing:.12em !important;
+        color:#7b849a !important;
+        font-weight:800 !important;
+      }
+      .role-card strong{
+        display:block !important;
+        font-size:13px !important;
+        line-height:1.25 !important;
+        margin-top:2px !important;
+      }
+      .menu{
+        margin-top:0 !important;
+        display:block !important;
+      }
+      .menu-title{
+        margin:20px 8px 8px !important;
+        color:#8a96ad !important;
+        font-size:9px !important;
+        line-height:1.2 !important;
+        font-weight:900 !important;
+        letter-spacing:.14em !important;
+      }
+      .menu-title.second{
+        margin-top:20px !important;
+      }
+      .menu-item{
+        width:100% !important;
+        min-height:0 !important;
+        padding:10px 9px !important;
+        margin:2px 0 !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:10px !important;
+        border:1px solid transparent !important;
+        border-radius:11px !important;
+        color:#60708b !important;
+        text-align:left !important;
+        font-size:13px !important;
+        line-height:1.2 !important;
+        font-weight:700 !important;
+        background:transparent !important;
+      }
+      .menu-item i{
+        width:18px !important;
+        height:auto !important;
+        flex:0 0 18px !important;
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        border-radius:0 !important;
+        color:#71809a !important;
+        font-size:12px !important;
+        background:transparent !important;
+      }
+      .menu-item:hover{
+        color:#283650 !important;
+        border-color:transparent !important;
+        background:#f1f4fb !important;
+      }
+      .menu-item.active{
+        color:#26324a !important;
+        border-color:#c9ccff !important;
+        background:linear-gradient(90deg,#eef1ff,#f8f4ff) !important;
+      }
+      .sidebar-bottom{
+        margin-top:auto !important;
+        padding-top:18px !important;
+        display:grid !important;
+        gap:8px !important;
+      }
+      .sidebar-profile{
+        padding:9px !important;
+        border:1px solid #dfe3ef !important;
+        border-radius:13px !important;
+        background:rgba(255,255,255,.7) !important;
+      }
+      .sidebar-profile strong{
+        font-size:12px !important;
+      }
+      .sidebar-profile small{
+        font-size:10px !important;
+      }
+      .logout{
+        font-size:11px !important;
+      }
+      .main{
+        margin-left:270px !important;
+      }
+
     `}</style>
   )
 }
