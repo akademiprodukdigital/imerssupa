@@ -1669,6 +1669,24 @@ function Styles() {
           display: grid;
         }
       }
-    `}</style>
+    
+      /* ADMIN SIDEBAR MENU STANDARD — reference: app/admin/page.tsx */
+      .sidebar nav p,
+      .sidebar .menu-title{
+        font-size:9px !important;
+        line-height:1.2 !important;
+        font-weight:900 !important;
+        letter-spacing:.14em !important;
+      }
+      .sidebar nav button,
+      .sidebar .menu-item{
+        font-size:13px !important;
+        line-height:1.2 !important;
+        font-weight:700 !important;
+      }
+      .sidebar .menu-item i{
+        font-size:12px !important;
+      }
+`}</style>
   )
 }

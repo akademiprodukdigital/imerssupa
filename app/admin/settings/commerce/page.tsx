@@ -220,7 +220,25 @@ export default function CommerceSettingsPage() {
       .savebar{position:sticky;bottom:14px;margin-top:14px;padding:12px 14px;border:1px solid #d8deea;border-radius:15px;background:rgba(255,255,255,.88);backdrop-filter:blur(18px);box-shadow:0 15px 40px rgba(42,48,73,.12);display:flex;justify-content:space-between;align-items:center;gap:15px}.savebar>div{display:grid;gap:3px}.savebar strong{font-size:13px}.savebar span{font-size:11px;color:#7d889d}.savebar button{border:0;border-radius:11px;padding:11px 18px;background:linear-gradient(135deg,#5268ff,#7445ee);color:white;font-size:13px;font-weight:900;cursor:pointer}.savebar button:disabled,.refresh:disabled{opacity:.55;cursor:not-allowed}
       @media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
       @media(max-width:760px){.shell{display:block}.sidebar{position:relative;width:100%;height:auto}.content{padding:20px 14px}.stats{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.savebar{position:static}.head h1{font-size:22px}}
-    `}</style>
+    
+      /* ADMIN SIDEBAR MENU STANDARD — reference: app/admin/page.tsx */
+      .sidebar nav p,
+      .sidebar .menu-title{
+        font-size:9px !important;
+        line-height:1.2 !important;
+        font-weight:900 !important;
+        letter-spacing:.14em !important;
+      }
+      .sidebar nav button,
+      .sidebar .menu-item{
+        font-size:13px !important;
+        line-height:1.2 !important;
+        font-weight:700 !important;
+      }
+      .sidebar .menu-item i{
+        font-size:12px !important;
+      }
+`}</style>
   </div>
 }
 

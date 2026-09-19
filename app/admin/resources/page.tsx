@@ -235,7 +235,25 @@ export default function AdminResourcesPage() {
         @media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 150px}.filters select:last-child{grid-column:2}.sidebar{width:235px}main{margin-left:235px}}
         @media(max-width:820px){.sidebar{display:none}main{margin-left:0}.topbar{padding:0 16px}.search-top{display:none}.content{padding:22px 15px 40px}.stats{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr}.filters select:last-child{grid-column:auto}.pagination{align-items:flex-start;flex-direction:column}header h1{font-size:27px}}
         @media(max-width:520px){.stats{grid-template-columns:1fr}.mini-profile span:last-child{display:none}.panel-head{align-items:flex-start;flex-direction:column}.modal-backdrop{padding:10px}}
-      `}</style>
+      
+      /* ADMIN SIDEBAR MENU STANDARD — reference: app/admin/page.tsx */
+      .sidebar nav p,
+      .sidebar .menu-title{
+        font-size:9px !important;
+        line-height:1.2 !important;
+        font-weight:900 !important;
+        letter-spacing:.14em !important;
+      }
+      .sidebar nav button,
+      .sidebar .menu-item{
+        font-size:13px !important;
+        line-height:1.2 !important;
+        font-weight:700 !important;
+      }
+      .sidebar .menu-item i{
+        font-size:12px !important;
+      }
+`}</style>
     </div>
 }
 

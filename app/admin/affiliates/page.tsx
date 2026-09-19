@@ -1950,6 +1950,24 @@ export default function AdminAffiliatesPage(){
 .aff-empty{padding:55px 20px;text-align:center;color:#9aa2b4;font-size:11px}.aff-pagination{display:flex;justify-content:space-between;align-items:center;padding:13px 20px;border-top:1px solid #f0f1f5;font-size:10px;color:#8992a5}.aff-pages{display:flex;align-items:center;gap:8px}.aff-pages button{height:32px;padding:0 10px;border:1px solid #e5e8f0;border-radius:8px;background:#fff;font-size:10px}.aff-pages button:disabled{opacity:.4}
 .aff-alert{margin-bottom:14px;padding:11px 13px;border-radius:11px;font-size:11px}.aff-alert.error{border:1px solid #ffd7de;background:#fff1f4;color:#b6344c}.aff-alert.ok{border:1px solid #ccefdc;background:#effcf5;color:#24764d}
 @media(max-width:1180px){.aff-stats{grid-template-columns:repeat(2,1fr)}.aff-grid{grid-template-columns:1fr}}@media(max-width:760px){.aff-head{flex-direction:column}.aff-stats{grid-template-columns:1fr}.aff-form{grid-template-columns:1fr}.aff-field.full{grid-column:auto}.aff-filters{flex-direction:column}}
+
+      /* ADMIN SIDEBAR MENU STANDARD — reference: app/admin/page.tsx */
+      .sidebar nav p,
+      .sidebar .menu-title{
+        font-size:9px !important;
+        line-height:1.2 !important;
+        font-weight:900 !important;
+        letter-spacing:.14em !important;
+      }
+      .sidebar nav button,
+      .sidebar .menu-item{
+        font-size:13px !important;
+        line-height:1.2 !important;
+        font-weight:700 !important;
+      }
+      .sidebar .menu-item i{
+        font-size:12px !important;
+      }
 `}</style>
 </div>
 }

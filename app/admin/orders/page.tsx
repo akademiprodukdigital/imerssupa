@@ -245,4 +245,22 @@ table{font-size:12px!important}
 .account small{font-size:10.5px!important}
 .logout{font-size:12.5px!important}
 @media(max-width:760px){.sidebar{display:none}.content{width:100%!important;margin-left:0!important;padding:72px 14px 35px!important}header{display:block}header h1{font-size:22px}.header-actions{margin-top:14px}.stats{grid-template-columns:1fr 1fr;gap:9px}.stat{min-height:104px;padding:13px}.stat strong{font-size:16px}.panel-head{display:block}.filters{flex-wrap:wrap}.search{flex-basis:100%}.filters select{height:36px;flex:1}.pagination{gap:10px;align-items:flex-start}.pagination>span{display:none}}
+
+      /* ADMIN SIDEBAR MENU STANDARD — reference: app/admin/page.tsx */
+      .sidebar nav p,
+      .sidebar .menu-title{
+        font-size:9px !important;
+        line-height:1.2 !important;
+        font-weight:900 !important;
+        letter-spacing:.14em !important;
+      }
+      .sidebar nav button,
+      .sidebar .menu-item{
+        font-size:13px !important;
+        line-height:1.2 !important;
+        font-weight:700 !important;
+      }
+      .sidebar .menu-item i{
+        font-size:12px !important;
+      }
 `}</style>}
