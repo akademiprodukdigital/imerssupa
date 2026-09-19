@@ -212,6 +212,7 @@ export default function LoginPage() {
     if (
       typedProfile.role !== 'super_admin' &&
       typedProfile.role !== 'admin' &&
+      typedProfile.role !== 'agency' &&
       typedProfile.role !== 'member'
     ) {
       await supabase.auth.signOut()
