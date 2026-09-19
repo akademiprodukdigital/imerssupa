@@ -325,11 +325,13 @@ export default function SystemSettingsPage() {
                 <SettingCard
                   icon="◈"
                   type="purple"
-                  badge="NEXT"
+                  badge="READY"
                   title="Platform Branding"
-                  description="Identitas global dashboard, nama platform, logo, favicon dan footer white-label."
-                  action="Segera Dibangun"
-                  disabled
+                  description="Identitas global, logo, favicon URL, appearance dan copywriting halaman login white-label."
+                  action="Kelola Branding"
+                  onClick={() =>
+                    router.push('/admin/settings/branding')
+                  }
                 />
 
                 <SettingCard
