@@ -5,6 +5,60 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import ThemeSwitcher from '../../components/ThemeSwitcher'
 
+type BrandingConfig = {
+  app_name: string
+  short_name: string
+  logo_url: string
+  icon_url: string
+  favicon_url: string
+  login_badge: string
+  login_title: string
+  login_description: string
+  login_feature_1_icon: string
+  login_feature_1_title: string
+  login_feature_1_text: string
+  login_feature_2_icon: string
+  login_feature_2_title: string
+  login_feature_2_text: string
+  login_feature_3_icon: string
+  login_feature_3_title: string
+  login_feature_3_text: string
+  login_feature_4_icon: string
+  login_feature_4_title: string
+  login_feature_4_text: string
+  login_welcome_badge: string
+  login_form_title: string
+  login_form_description: string
+  login_role_note: string
+}
+
+const brandingDefaults: BrandingConfig = {
+  app_name: 'iMersSUPA',
+  short_name: 'S',
+  logo_url: '',
+  icon_url: '',
+  favicon_url: '',
+  login_badge: 'DIGITAL MEMBER EXPERIENCE',
+  login_title: 'Semua produk digital. Satu member area.',
+  login_description: 'Akses produk, materi pembelajaran, resource, progress belajar dan semua konten digital Anda dalam satu platform.',
+  login_feature_1_icon: '◇',
+  login_feature_1_title: 'Secure Access',
+  login_feature_1_text: 'Akses berdasarkan akun dan entitlement.',
+  login_feature_2_icon: '✓',
+  login_feature_2_title: 'Learning Progress',
+  login_feature_2_text: 'Progress belajar tersimpan otomatis.',
+  login_feature_3_icon: '▶',
+  login_feature_3_title: 'Continue Learning',
+  login_feature_3_text: 'Lanjut langsung ke materi berikutnya.',
+  login_feature_4_icon: '◆',
+  login_feature_4_title: 'Digital Resources',
+  login_feature_4_text: 'Bonus dan resource dalam satu tempat.',
+  login_welcome_badge: 'WELCOME BACK',
+  login_form_title: 'Masuk ke akun Anda',
+  login_form_description: 'Masukkan email dan password untuk melanjutkan ke dashboard.',
+  login_role_note: 'Satu halaman login untuk Member, Agency, Admin dan Super Admin.',
+}
+
 type Profile = {
   id: string
   full_name: string | null
@@ -23,14 +77,49 @@ export default function LoginPage() {
   const [checkingSession, setCheckingSession] = useState(true)
 
   const [error, setError] = useState('')
+  const [branding, setBranding] = useState<BrandingConfig>(brandingDefaults)
 
   // ==========================================================
   // CHECK EXISTING SESSION
   // ==========================================================
 
   useEffect(() => {
+    void loadBranding()
     checkExistingSession()
   }, [])
+
+  async function loadBranding() {
+    const { data } = await supabase
+      .from('platform_settings')
+      .select('setting_value')
+      .eq('setting_group', 'platform')
+      .eq('setting_key', 'branding')
+      .maybeSingle()
+
+    if (data?.setting_value) {
+      const next = {
+        ...brandingDefaults,
+        ...(data.setting_value as Partial<BrandingConfig>),
+      }
+      setBranding(next)
+      applyFavicon(next.favicon_url || next.icon_url)
+    } else {
+      applyFavicon('')
+    }
+  }
+
+  function applyFavicon(url: string) {
+    if (typeof document === 'undefined') return
+
+    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']")
+    if (!link) {
+      link = document.createElement('link')
+      link.rel = 'icon'
+      document.head.appendChild(link)
+    }
+
+    link.href = url.trim() || '/favicon.ico'
+  }
 
   async function checkExistingSession() {
     setCheckingSession(true)
@@ -322,13 +411,17 @@ export default function LoginPage() {
             <div className="brand-content">
 
               <div className="brand-header">
-                <div className="brand-icon">
-                  S
-                </div>
+                {branding.logo_url ? (
+                  <img className="brand-logo-image" src={branding.logo_url} alt={branding.app_name} />
+                ) : (
+                  <div className="brand-icon">
+                    {(branding.short_name || 'S').slice(0, 2).toUpperCase()}
+                  </div>
+                )}
 
                 <div>
                   <div className="brand-name">
-                    iMersSUPA
+                    {branding.app_name}
                   </div>
 
                   <div className="brand-caption">
@@ -338,103 +431,39 @@ export default function LoginPage() {
               </div>
 
               <div className="hero-badge">
-                DIGITAL MEMBER EXPERIENCE
+                {branding.login_badge}
               </div>
 
               <h1>
-                Semua produk digital.
-                <br />
-
-                <span>
-                  Satu member area.
-                </span>
+                {branding.login_title}
               </h1>
 
               <p className="hero-description">
-                Akses produk, materi pembelajaran,
-                resource, progress belajar dan semua
-                konten digital Anda dalam satu
-                platform.
+                {branding.login_description}
               </p>
 
               <div className="feature-grid">
-
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    ◇
+                {[
+                  [branding.login_feature_1_icon, branding.login_feature_1_title, branding.login_feature_1_text],
+                  [branding.login_feature_2_icon, branding.login_feature_2_title, branding.login_feature_2_text],
+                  [branding.login_feature_3_icon, branding.login_feature_3_title, branding.login_feature_3_text],
+                  [branding.login_feature_4_icon, branding.login_feature_4_title, branding.login_feature_4_text],
+                ].map(([icon, title, text], index) => (
+                  <div className="feature-card" key={index}>
+                    <div className="feature-icon">{icon}</div>
+                    <div>
+                      <strong>{title}</strong>
+                      <span>{text}</span>
+                    </div>
                   </div>
-
-                  <div>
-                    <strong>
-                      Secure Access
-                    </strong>
-
-                    <span>
-                      Akses berdasarkan akun dan
-                      entitlement.
-                    </span>
-                  </div>
-                </div>
-
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    ✓
-                  </div>
-
-                  <div>
-                    <strong>
-                      Learning Progress
-                    </strong>
-
-                    <span>
-                      Progress belajar tersimpan
-                      otomatis.
-                    </span>
-                  </div>
-                </div>
-
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    ▶
-                  </div>
-
-                  <div>
-                    <strong>
-                      Continue Learning
-                    </strong>
-
-                    <span>
-                      Lanjut langsung ke materi
-                      berikutnya.
-                    </span>
-                  </div>
-                </div>
-
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    ◆
-                  </div>
-
-                  <div>
-                    <strong>
-                      Digital Resources
-                    </strong>
-
-                    <span>
-                      Bonus dan resource dalam satu
-                      tempat.
-                    </span>
-                  </div>
-                </div>
-
+                ))}
               </div>
 
               <div className="role-note">
                 <span className="role-dot" />
 
                 <span>
-                  Satu halaman login untuk Member,
-                  Agency, Admin dan Super Admin.
+                  {branding.login_role_note}
                 </span>
               </div>
 
@@ -450,13 +479,17 @@ export default function LoginPage() {
             <div className="login-card">
 
               <div className="mobile-brand">
-                <div className="mobile-logo">
-                  S
-                </div>
+                {branding.logo_url ? (
+                  <img className="mobile-logo-image" src={branding.logo_url} alt={branding.app_name} />
+                ) : (
+                  <div className="mobile-logo">
+                    {(branding.short_name || 'S').slice(0, 2).toUpperCase()}
+                  </div>
+                )}
 
                 <div>
                   <strong>
-                    iMersSUPA
+                    {branding.app_name}
                   </strong>
 
                   <span>
@@ -466,16 +499,15 @@ export default function LoginPage() {
               </div>
 
               <div className="eyebrow">
-                WELCOME BACK
+                {branding.login_welcome_badge}
               </div>
 
               <h2>
-                Masuk ke akun Anda
+                {branding.login_form_title}
               </h2>
 
               <p className="login-description">
-                Masukkan email dan password untuk
-                melanjutkan ke dashboard.
+                {branding.login_form_description}
               </p>
 
               <form
