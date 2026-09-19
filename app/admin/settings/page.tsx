@@ -554,97 +554,27 @@ function Navigation({
 
   return (
     <nav className="menu">
-      <div className="menu-title">
-        MAIN MENU
-      </div>
-
-      <button
-        className="menu-item"
-        onClick={() => go('/admin')}
-      >
-        <i>⌂</i>
-        Dashboard
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() => go('/admin/members')}
-      >
-        <i>◎</i>
-        Members
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() => go('/admin/products')}
-      >
-        <i>▣</i>
-        Products
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() => go('/admin/content')}
-      >
-        <i>▶</i>
-        Content
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() => go('/admin/access')}
-      >
-        <i>◇</i>
-        Member Access
-      </button>
-
-      <div className="menu-title second">
-        SUPER ADMIN
-      </div>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/administrators')
-        }
-      >
-        <i>♛</i>
-        Administrators
-      </button>
-
-      <button
-        className="menu-item active"
-        onClick={() =>
-          go('/admin/settings')
-        }
-      >
-        <i>⚙</i>
-        System Settings
-      </button>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin/security')
-        }
-      >
-        <i>◇</i>
-        Security / Audit
-      </button>
-
-      <div className="menu-title second">
-        ACCOUNT
-      </div>
-
-      <button
-        className="menu-item"
-        onClick={() =>
-          go('/admin?profile=1')
-        }
-      >
-        <i>◉</i>
-        Profile
-      </button>
+      <div className="menu-title">MAIN MENU</div>
+      <button className="menu-item" onClick={() => go('/admin')}><i>⌂</i>Dashboard</button>
+      <button className="menu-item" onClick={() => go('/admin/members')}><i>◎</i>Members</button>
+      <button className="menu-item" onClick={() => go('/admin/products')}><i>▣</i>Products</button>
+      <button className="menu-item" onClick={() => go('/admin/content')}><i>▶</i>Content</button>
+      <button className="menu-item" onClick={() => go('/admin/access')}><i>◇</i>Member Access</button>
+      <button className="menu-item" onClick={() => go('/admin/progress')}><i>↗</i>Progress</button>
+      <button className="menu-item" onClick={() => go('/admin/resources')}><i>◆</i>Resources</button>
+      <div className="menu-title second">COMMERCE</div>
+      <button className="menu-item" onClick={() => go('/admin/orders')}><i>▤</i>Orders & Transactions</button>
+      <button className="menu-item" onClick={() => go('/admin/payments')}><i>◫</i>Payments</button>
+      <button className="menu-item" onClick={() => go('/admin/affiliates')}><i>⌘</i>Affiliate & Coupons</button>
+      <button className="menu-item" onClick={() => go('/admin/notifications')}><i>◌</i>Notifications</button>
+      <div className="menu-title second">SUPER ADMIN</div>
+      <button className="menu-item" onClick={() => go('/admin/agencies')}><i>♟</i>Agency Management</button>
+      <button className="menu-item" onClick={() => go('/admin/administrators')}><i>♛</i>Administrators</button>
+      <button className="menu-item active" onClick={() => go('/admin/settings')}><i>⚙</i>System Settings</button>
+      <button className="menu-item" onClick={() => go('/admin/settings/commerce')}><i>◈</i>Commerce Settings</button>
+      <button className="menu-item" onClick={() => go('/admin/security')}><i>◇</i>Security / Audit</button>
+      <div className="menu-title second">ACCOUNT</div>
+      <button className="menu-item" onClick={() => go('/admin/profile')}><i>◉</i>Profile</button>
     </nav>
   )
 }
