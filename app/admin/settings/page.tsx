@@ -337,11 +337,13 @@ export default function SystemSettingsPage() {
                 <SettingCard
                   icon="✦"
                   type="pink"
-                  badge="NEXT"
+                  badge="READY"
                   title="Appearance"
                   description="Theme global, gradient, warna interface, radius card dan visual preference."
-                  action="Segera Dibangun"
-                  disabled
+                  action="Kelola Appearance"
+                  onClick={() =>
+                    router.push('/admin/settings/branding')
+                  }
                 />
               </div>
             </section>
@@ -358,31 +360,37 @@ export default function SystemSettingsPage() {
                 <SettingCard
                   icon="◉"
                   type="green"
-                  badge="PLANNED"
+                  badge="READY"
                   title="WhatsApp Gateway"
-                  description="Konfigurasi Fonnte atau Starsender, token API, status provider dan Test WhatsApp."
-                  action="Segera Dibangun"
-                  disabled
+                  description="Kelola provider komunikasi WhatsApp yang tersedia pada konfigurasi Commerce."
+                  action="Kelola Provider"
+                  onClick={() =>
+                    router.push('/admin/settings/commerce')
+                  }
                 />
 
                 <SettingCard
                   icon="✉"
                   type="orange"
-                  badge="PLANNED"
+                  badge="READY"
                   title="Email Provider"
-                  description="Gunakan Mailketing atau SMTP sendiri lengkap dengan sender identity dan Test Email."
-                  action="Segera Dibangun"
-                  disabled
+                  description="Kelola provider email dan konfigurasi komunikasi pada Commerce Settings."
+                  action="Kelola Provider"
+                  onClick={() =>
+                    router.push('/admin/settings/commerce')
+                  }
                 />
 
                 <SettingCard
                   icon="♢"
                   type="cyan"
-                  badge="PLANNED"
-                  title="Notification Rules"
-                  description="Atur notifikasi registrasi, pembayaran, access granted, expiry dan event lainnya."
-                  action="Segera Dibangun"
-                  disabled
+                  badge="READY"
+                  title="Notifications"
+                  description="Kelola template notifikasi, variable dan aktivitas notifikasi platform."
+                  action="Kelola Notifications"
+                  onClick={() =>
+                    router.push('/admin/notifications')
+                  }
                 />
               </div>
             </section>
@@ -399,11 +407,13 @@ export default function SystemSettingsPage() {
                 <SettingCard
                   icon="◇"
                   type="violet"
-                  badge="PLANNED"
-                  title="Payment Settings"
-                  description="Konfigurasi pembayaran, QRIS dan provider pembayaran platform."
-                  action="Segera Dibangun"
-                  disabled
+                  badge="READY"
+                  title="Commerce & Payment Settings"
+                  description="Atur checkout, order, currency, customer requirement, support dan konfigurasi commerce."
+                  action="Kelola Commerce"
+                  onClick={() =>
+                    router.push('/admin/settings/commerce')
+                  }
                 />
 
                 <SettingCard
