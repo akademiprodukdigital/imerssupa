@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const service = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
     const { data: profile } = await service.from('profiles').select('role,status').eq('id', userData.user.id).maybeSingle()
-    if (!profile || !['admin','super_admin'].includes(profile.role) || profile.status !== 'active') {
+    if (!profile || !['admin','super_admin'].includes(String(profile.role))) {
       return NextResponse.json({ ok: false, error: 'Admin access required' }, { status: 403 })
     }
 
