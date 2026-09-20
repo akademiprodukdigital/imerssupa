@@ -162,10 +162,11 @@ export default function CommerceSettingsPage() {
     setProviderDrafts(v => ({
       ...v,
       [code]: {
-        active: false, is_default: false, api_url: '', api_token: '',
-        sender_name: '', sender_address: '', host: '', port: '587',
-        secure: 'tls', username: '', password: '',
-        ...(v[code] || {}),
+        ...(v[code] || {
+          active: false, is_default: false, api_url: '', api_token: '',
+          sender_name: '', sender_address: '', host: '', port: '587',
+          secure: 'tls', username: '', password: '',
+        }),
         [key]: value,
       },
     }))
