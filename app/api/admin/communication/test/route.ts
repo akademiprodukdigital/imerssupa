@@ -22,11 +22,23 @@ export async function POST(req: NextRequest) {
     const { data: userData, error: userError } = await authClient.auth.getUser(token)
     if (userError || !userData.user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-    const service = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
-    const { data: profile } = await service.from('profiles').select('role,status').eq('id', userData.user.id).maybeSingle()
-    if (!profile || !['admin','super_admin'].includes(String(profile.role))) {
+    // Validate the logged-in caller with the same JWT-aware backend rule used by iMersSUPA.
+    // Do not infer the caller role through a service-role profile lookup.
+    const { data: isAdmin, error: roleError } = await authClient.rpc('is_imerssupa_admin')
+    if (roleError) {
+      return NextResponse.json(
+        { ok: false, error: `Gagal memvalidasi admin: ${roleError.message}` },
+        { status: 500 }
+      )
+    }
+    if (isAdmin !== true) {
       return NextResponse.json({ ok: false, error: 'Admin access required' }, { status: 403 })
     }
+
+    // Service role is used only after caller authorization, to read encrypted/server-only provider config.
+    const service = createClient(url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
 
     const body = await req.json()
     const providerCode = String(body?.provider_code || '').toLowerCase().trim()
