@@ -48,18 +48,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Data tes tidak lengkap.' }, { status: 400 })
     }
 
-    // Resolve the exact requested provider server-side, including its secret.
-    const { data: rows, error: rowsError } = await service
-      .from('communication_providers')
-      .select('channel,provider_code,provider_name,active,public_config,secret_config,sender_name,sender_address')
-      .eq('channel', channel)
-      .eq('provider_code', providerCode)
-      .limit(1)
+    // STEP 26 intentionally blocks direct SELECT on communication_providers.
+    // Read the active provider through its trusted service_role RPC instead.
+    const { data: providerData, error: providerError } = await service.rpc(
+      'get_default_communication_provider',
+      { p_channel: channel }
+    )
 
-    if (rowsError) throw rowsError
-    const p: any = rows?.[0]
-    if (!p) return NextResponse.json({ ok: false, error: 'Provider belum tersimpan. Klik Simpan provider terlebih dahulu.' }, { status: 400 })
-    if (!p.active) return NextResponse.json({ ok: false, error: 'Provider belum diaktifkan.' }, { status: 400 })
+    if (providerError) {
+      return NextResponse.json(
+        { ok: false, error: `Gagal membaca provider ${channel}: ${providerError.message}` },
+        { status: 500 }
+      )
+    }
+
+    const p: any = providerData
+    if (!p) {
+      return NextResponse.json(
+        { ok: false, error: 'Belum ada provider aktif/default untuk channel ini. Simpan dan aktifkan provider terlebih dahulu.' },
+        { status: 400 }
+      )
+    }
+    if (String(p.provider_code || '').toLowerCase() !== providerCode) {
+      return NextResponse.json(
+        { ok: false, error: `Provider ${providerCode} belum menjadi provider aktif/default untuk ${channel}.` },
+        { status: 400 }
+      )
+    }
 
     const cfg = p.public_config || {}
     const secret = p.secret_config || {}
