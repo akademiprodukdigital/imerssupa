@@ -27,13 +27,29 @@ type CommerceSettings = {
 }
 type Provider = {
   id: string
-  channel: string
+  channel: 'email' | 'whatsapp'
   provider_code: string
   provider_name: string
   active: boolean
   is_default: boolean
+  public_config?: Record<string, any> | null
   sender_name?: string | null
   sender_address?: string | null
+  has_secret?: boolean
+}
+
+type ProviderDraft = {
+  active: boolean
+  is_default: boolean
+  api_url: string
+  api_token: string
+  sender_name: string
+  sender_address: string
+  host: string
+  port: string
+  secure: string
+  username: string
+  password: string
 }
 
 const defaults: CommerceSettings = {
@@ -58,6 +74,8 @@ export default function CommerceSettingsPage() {
   const [email, setEmail] = useState('')
   const [form, setForm] = useState<CommerceSettings>(defaults)
   const [providers, setProviders] = useState<Provider[]>([])
+  const [providerDrafts, setProviderDrafts] = useState<Record<string, ProviderDraft>>({})
+  const [providerSaving, setProviderSaving] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -85,7 +103,28 @@ export default function CommerceSettingsPage() {
 
       const { data: providerRows, error: pre } = await supabase.rpc('admin_list_communication_providers')
       if (pre) throw pre
-      setProviders((providerRows || []) as Provider[])
+      const rows = (providerRows || []) as Provider[]
+      setProviders(rows)
+      setProviderDrafts(prev => {
+        const next = { ...prev }
+        for (const p of rows) {
+          const cfg = p.public_config || {}
+          next[p.provider_code] = {
+            active: !!p.active,
+            is_default: !!p.is_default,
+            api_url: String(cfg.api_url || ''),
+            api_token: '',
+            sender_name: p.sender_name || '',
+            sender_address: p.sender_address || '',
+            host: String(cfg.host || ''),
+            port: String(cfg.port || '587'),
+            secure: String(cfg.secure || 'tls'),
+            username: String(cfg.username || ''),
+            password: '',
+          }
+        }
+        return next
+      })
     } catch (e: any) {
       setError(e?.message || 'Gagal memuat Commerce Settings.')
     } finally { setLoading(false) }
@@ -117,6 +156,61 @@ export default function CommerceSettingsPage() {
       await load()
     } catch (e: any) { setError(e?.message || 'Gagal menyimpan Commerce Settings.') }
     finally { setSaving(false) }
+  }
+
+  const updateProviderDraft = (code: string, key: keyof ProviderDraft, value: any) => {
+    setProviderDrafts(v => ({
+      ...v,
+      [code]: {
+        active: false, is_default: false, api_url: '', api_token: '',
+        sender_name: '', sender_address: '', host: '', port: '587',
+        secure: 'tls', username: '', password: '',
+        ...(v[code] || {}),
+        [key]: value,
+      },
+    }))
+  }
+
+  const saveProvider = async (provider: Provider) => {
+    const d = providerDrafts[provider.provider_code]
+    if (!d) return
+    setProviderSaving(provider.provider_code)
+    setError(''); setMessage('')
+    try {
+      const isSmtp = provider.channel === 'email' && provider.provider_code === 'smtp'
+      const publicConfig = isSmtp
+        ? {
+            host: d.host.trim(),
+            port: Math.max(1, Number(d.port) || 587),
+            secure: d.secure || 'tls',
+            username: d.username.trim(),
+          }
+        : { api_url: d.api_url.trim() }
+
+      let secretConfig: Record<string, string> | null = null
+      if (isSmtp && d.password.trim()) secretConfig = { password: d.password }
+      if (!isSmtp && d.api_token.trim()) secretConfig = { api_token: d.api_token.trim() }
+
+      const { error: upsertError } = await supabase.rpc('admin_upsert_communication_provider', {
+        p_id: provider.id,
+        p_channel: provider.channel,
+        p_provider_code: provider.provider_code,
+        p_provider_name: provider.provider_name,
+        p_active: d.active,
+        p_is_default: d.is_default,
+        p_public_config: publicConfig,
+        p_secret_config: secretConfig,
+        p_sender_name: d.sender_name.trim() || null,
+        p_sender_address: d.sender_address.trim() || null,
+      })
+      if (upsertError) throw upsertError
+      setMessage(`${provider.provider_name} berhasil disimpan.`)
+      await load()
+    } catch (e: any) {
+      setError(e?.message || `Gagal menyimpan ${provider.provider_name}.`)
+    } finally {
+      setProviderSaving('')
+    }
   }
 
   const logout = async () => { await supabase.auth.signOut(); router.replace('/login') }
@@ -184,18 +278,69 @@ export default function CommerceSettingsPage() {
             <Input label="Privacy URL" value={form.privacy_url || ''} onChange={v => field('privacy_url', v)} placeholder="https://domain.com/privacy"/>
           </section>
 
-          <section className="card pink-card">
-            <CardHead kicker="COMMUNICATION PROVIDERS" title="Provider Overview" desc="Provider BYOK terdaftar. Secret credential tidak ditampilkan di browser."/>
-            <div className="providers">
-              {providers.map(p => <div className="provider" key={p.id}>
-                <div className="provider-icon">{p.channel === 'whatsapp' ? 'WA' : p.channel === 'email' ? '@' : '◌'}</div>
-                <div><strong>{p.provider_name || p.provider_code}</strong><small>{p.channel} · {p.provider_code}</small></div>
-                <div className="provider-tags">{p.is_default && <b>DEFAULT</b>}<span className={p.active ? 'active' : 'inactive'}>{p.active ? 'ACTIVE' : 'OFF'}</span></div>
-              </div>)}
-              {!loading && providers.length === 0 && <div className="empty">Belum ada communication provider.</div>}
+          <section className="card pink-card provider-settings-card">
+            <CardHead kicker="COMMUNICATION PROVIDERS" title="WhatsApp & Email Provider" desc="Masukkan token/API credential BYOK. Secret tersimpan server-side dan tidak pernah dibaca kembali ke browser."/>
+            <div className="provider-config-list">
+              {providers.map(p => {
+                const d = providerDrafts[p.provider_code]
+                if (!d) return null
+                const isSmtp = p.channel === 'email' && p.provider_code === 'smtp'
+                return <div className="provider-config" key={p.id}>
+                  <div className="provider-config-head">
+                    <div className="provider-ident">
+                      <div className="provider-icon">{p.channel === 'whatsapp' ? 'WA' : '@'}</div>
+                      <div>
+                        <strong>{p.provider_name || p.provider_code}</strong>
+                        <small>{p.channel === 'whatsapp' ? 'WhatsApp Gateway' : 'Email Provider'} · {p.provider_code}</small>
+                      </div>
+                    </div>
+                    <div className="provider-tags">
+                      {p.has_secret && <b>SECRET SAVED</b>}
+                      {p.is_default && <b>DEFAULT</b>}
+                      <span className={p.active ? 'active' : 'inactive'}>{p.active ? 'ACTIVE' : 'OFF'}</span>
+                    </div>
+                  </div>
+
+                  <div className="provider-switches">
+                    <Toggle label="Provider Active" desc="Aktifkan provider ini untuk pengiriman." checked={d.active} onChange={v => updateProviderDraft(p.provider_code, 'active', v)}/>
+                    <Toggle label="Default Provider" desc={`Jadikan ${p.provider_name} default untuk channel ${p.channel}.`} checked={d.is_default} onChange={v => {
+                      updateProviderDraft(p.provider_code, 'is_default', v)
+                      if (v) updateProviderDraft(p.provider_code, 'active', true)
+                    }}/>
+                  </div>
+
+                  {isSmtp ? <>
+                    <div className="two">
+                      <Input label="SMTP Host" value={d.host} onChange={v => updateProviderDraft(p.provider_code, 'host', v)} placeholder="mail.domain.com"/>
+                      <Input label="SMTP Port" type="number" value={d.port} onChange={v => updateProviderDraft(p.provider_code, 'port', v)} placeholder="587"/>
+                    </div>
+                    <div className="two">
+                      <Input label="SMTP Username" value={d.username} onChange={v => updateProviderDraft(p.provider_code, 'username', v)} placeholder="user@domain.com"/>
+                      <SelectField label="Encryption" value={d.secure} onChange={v => updateProviderDraft(p.provider_code, 'secure', v)} options={[['tls','TLS'],['ssl','SSL'],['none','None']]}/>
+                    </div>
+                    <SecretInput label={p.has_secret ? 'SMTP Password (kosongkan jika tidak diganti)' : 'SMTP Password'} value={d.password} onChange={v => updateProviderDraft(p.provider_code, 'password', v)} placeholder={p.has_secret ? '•••••••• tersimpan' : 'Masukkan password SMTP'}/>
+                  </> : <>
+                    <Input label="API Endpoint" value={d.api_url} onChange={v => updateProviderDraft(p.provider_code, 'api_url', v)}
+                      placeholder={p.provider_code === 'fonnte' ? 'https://api.fonnte.com/send' : p.provider_code === 'mailketing' ? 'https://api.mailketing.co.id/api/v1/send' : 'https://api.provider.com/send'}/>
+                    <SecretInput label={p.has_secret ? 'API Token (kosongkan jika tidak diganti)' : 'API Token'} value={d.api_token} onChange={v => updateProviderDraft(p.provider_code, 'api_token', v)} placeholder={p.has_secret ? '•••••••• token tersimpan' : 'Masukkan API token'}/>
+                  </>}
+
+                  {p.channel === 'email' && <div className="two">
+                    <Input label="From Name" value={d.sender_name} onChange={v => updateProviderDraft(p.provider_code, 'sender_name', v)} placeholder="iMersSUPA"/>
+                    <Input label="From Email" value={d.sender_address} onChange={v => updateProviderDraft(p.provider_code, 'sender_address', v)} placeholder="noreply@domain.com"/>
+                  </div>}
+
+                  <div className="provider-actions">
+                    <span>🔒 Credential lama tetap dipertahankan bila field secret dikosongkan.</span>
+                    <button type="button" onClick={() => void saveProvider(p)} disabled={providerSaving === p.provider_code || loading}>
+                      {providerSaving === p.provider_code ? 'Menyimpan...' : `Simpan ${p.provider_name}`}
+                    </button>
+                  </div>
+                </div>
+              })}
+              {!loading && providers.length === 0 && <div className="empty">Belum ada provider. Jalankan backend STEP 26 terlebih dahulu.</div>}
               {loading && <div className="empty">Loading provider...</div>}
             </div>
-            <p className="secure">🔒 API token / secret provider tetap server-side dan tidak dibaca halaman ini.</p>
           </section>
         </div>
 
@@ -215,30 +360,12 @@ export default function CommerceSettingsPage() {
       .alert{margin-top:15px;padding:11px 13px;border-radius:11px;font-size:11px}.err{border:1px solid #ffcaca;background:#fff0f0;color:#d33}.ok{border:1px solid #bcebd4;background:#effcf5;color:#168555}
       .stats{margin-top:20px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.stat{min-height:112px;padding:15px;border:1px solid #dde3ef;border-radius:17px;display:flex;gap:12px;align-items:flex-start;box-shadow:0 12px 30px rgba(41,48,73,.05)}.stat.blue,.blue-card{background:linear-gradient(145deg,#edf5ff,#fff)}.stat.purple,.purple-card{background:linear-gradient(145deg,#f3edff,#fff)}.stat.green,.green-card{background:linear-gradient(145deg,#e9fbf3,#fff)}.stat.pink,.pink-card{background:linear-gradient(145deg,#fff0f7,#fff)}.stat>span{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#ffffffaa;color:#6558f3;font-weight:900}.stat>div{display:grid;gap:4px}.stat small{font-size:11.5px;color:#7e89a0}.stat strong{font-size:28px;line-height:1.05}.stat p{margin:0;color:#8a95aa;font-size:11px;line-height:1.45}
       .grid{margin-top:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.card{border:1px solid #dce2ef;border-radius:18px;padding:18px;box-shadow:0 14px 34px rgba(42,49,75,.045)}.card-head{margin-bottom:16px}.card-head h2{margin:5px 0 4px;font-size:20px}.toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 12px;margin-bottom:8px;border:1px solid #dde3ef;border-radius:12px;background:rgba(255,255,255,.62)}.toggle>div{display:grid;gap:3px}.toggle strong{font-size:13px}.toggle small{font-size:11px;color:#7f8ba0}.switch{position:relative;width:42px;height:24px;border:0;border-radius:20px;background:#cfd5e1;cursor:pointer}.switch.on{background:#6c5cf3}.switch i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.18s}.switch.on i{left:21px}
-      .field{display:grid;gap:6px;margin-top:11px}.field label{font-size:12px;font-weight:800;color:#4e5a70}.field input,.field textarea{width:100%;border:1px solid #d9e0ec;border-radius:11px;padding:11px 12px;outline:none;background:rgba(255,255,255,.72);color:#1c2536;font-size:13.5px}.field textarea{min-height:88px;resize:vertical;line-height:1.5}.field input:focus,.field textarea:focus{border-color:#8175f5;box-shadow:0 0 0 3px #7568f314}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-      .providers{display:grid;gap:8px}.provider{padding:10px;border:1px solid #dce2ef;border-radius:12px;background:rgba(255,255,255,.62);display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:10px}.provider-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:#edf0ff;color:#6558f3;font-size:10px;font-weight:900}.provider>div:nth-child(2){display:grid;gap:3px}.provider strong{font-size:13px}.provider small{font-size:10.5px;color:#7d889d;text-transform:capitalize}.provider-tags{display:flex;gap:5px;align-items:center}.provider-tags b,.provider-tags span{font-size:7px;padding:5px 7px;border-radius:20px}.provider-tags b{background:#eeeaff;color:#6658e9}.provider-tags .active{background:#e3f8ec;color:#128450}.provider-tags .inactive{background:#f3f4f7;color:#7e8797}.empty{padding:25px;text-align:center;color:#8a95a8;font-size:12px}.secure{margin:12px 0 0;font-size:11px;color:#758198;line-height:1.5}
+      .field{display:grid;gap:6px;margin-top:11px}.field label{font-size:12px;font-weight:800;color:#4e5a70}.field input,.field textarea,.field select{width:100%;border:1px solid #d9e0ec;border-radius:11px;padding:11px 12px;outline:none;background:rgba(255,255,255,.72);color:#1c2536;font-size:13.5px}.field textarea{min-height:88px;resize:vertical;line-height:1.5}.field input:focus,.field textarea:focus,.field select:focus{border-color:#8175f5;box-shadow:0 0 0 3px #7568f314}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .provider-settings-card{grid-column:1/-1}.provider-config-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.provider-config{padding:14px;border:1px solid #dce2ef;border-radius:15px;background:rgba(255,255,255,.68)}.provider-config-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.provider-ident{display:flex;align-items:center;gap:10px}.provider-ident>div:last-child{display:grid;gap:3px}.provider-ident strong{font-size:14px}.provider-ident small{font-size:11px;color:#7d889d;text-transform:capitalize}.provider-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#edf0ff;color:#6558f3;font-size:10px;font-weight:900}.provider-tags{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.provider-tags b,.provider-tags span{font-size:8px;padding:5px 7px;border-radius:20px}.provider-tags b{background:#eeeaff;color:#6658e9}.provider-tags .active{background:#e3f8ec;color:#128450}.provider-tags .inactive{background:#f3f4f7;color:#7e8797}.provider-switches{display:grid;grid-template-columns:1fr 1fr;gap:8px}.provider-switches .toggle{margin-bottom:0}.provider-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:13px;padding-top:12px;border-top:1px solid #e2e6ef}.provider-actions span{font-size:10.5px;color:#778398;line-height:1.45}.provider-actions button{border:0;border-radius:10px;padding:10px 13px;background:linear-gradient(135deg,#5268ff,#7445ee);color:#fff;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap}.provider-actions button:disabled{opacity:.55;cursor:not-allowed}.empty{padding:25px;text-align:center;color:#8a95a8;font-size:12px}.secure{margin:12px 0 0;font-size:11px;color:#758198;line-height:1.5}
       .savebar{position:sticky;bottom:14px;margin-top:14px;padding:12px 14px;border:1px solid #d8deea;border-radius:15px;background:rgba(255,255,255,.88);backdrop-filter:blur(18px);box-shadow:0 15px 40px rgba(42,48,73,.12);display:flex;justify-content:space-between;align-items:center;gap:15px}.savebar>div{display:grid;gap:3px}.savebar strong{font-size:13px}.savebar span{font-size:11px;color:#7d889d}.savebar button{border:0;border-radius:11px;padding:11px 18px;background:linear-gradient(135deg,#5268ff,#7445ee);color:white;font-size:13px;font-weight:900;cursor:pointer}.savebar button:disabled,.refresh:disabled{opacity:.55;cursor:not-allowed}
-      @media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+      @media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.provider-config-list{grid-template-columns:1fr}}
       @media(max-width:760px){.shell{display:block}.sidebar{position:relative;width:100%;height:auto}.content{padding:20px 14px}.stats{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.savebar{position:static}.head h1{font-size:22px}}
-    
-      /* ADMIN SIDEBAR MENU STANDARD — reference: app/admin/page.tsx */
-      .sidebar nav p,
-      .sidebar .menu-title{
-        font-size:9px !important;
-        line-height:1.2 !important;
-        font-weight:900 !important;
-        letter-spacing:.14em !important;
-      }
-      .sidebar nav button,
-      .sidebar .menu-item{
-        font-size:13px !important;
-        line-height:1.2 !important;
-        font-weight:700 !important;
-      }
-      .sidebar .menu-item i{
-        font-size:12px !important;
-      }
-`}</style>
+    `}</style>
   </div>
 }
 
@@ -253,6 +380,12 @@ function Toggle({label,desc,checked,onChange}:{label:string;desc:string;checked:
 }
 function Input({label,value,onChange,placeholder='',type='text'}:{label:string;value:string;onChange:(v:string)=>void;placeholder?:string;type?:string}) {
   return <div className="field"><label>{label}</label><input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}/></div>
+}
+function SecretInput({label,value,onChange,placeholder=''}:{label:string;value:string;onChange:(v:string)=>void;placeholder?:string}) {
+  return <div className="field"><label>{label}</label><input type="password" autoComplete="new-password" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}/></div>
+}
+function SelectField({label,value,onChange,options}:{label:string;value:string;onChange:(v:string)=>void;options:[string,string][]}) {
+  return <div className="field"><label>{label}</label><select value={value} onChange={e=>onChange(e.target.value)}>{options.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
 }
 function TextArea({label,value,onChange,placeholder=''}:{label:string;value:string;onChange:(v:string)=>void;placeholder?:string}) {
   return <div className="field"><label>{label}</label><textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}/></div>
