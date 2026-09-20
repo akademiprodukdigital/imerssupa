@@ -26,7 +26,7 @@ type CommerceSettings = {
   privacy_url?: string | null
 }
 type Provider = {
-  id: string
+  id: string | null
   channel: 'email' | 'whatsapp'
   provider_code: string
   provider_name: string
@@ -76,6 +76,8 @@ export default function CommerceSettingsPage() {
   const [providers, setProviders] = useState<Provider[]>([])
   const [providerDrafts, setProviderDrafts] = useState<Record<string, ProviderDraft>>({})
   const [providerSaving, setProviderSaving] = useState<string>('')
+  const [providerTesting, setProviderTesting] = useState<string>('')
+  const [testTargets, setTestTargets] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -103,7 +105,17 @@ export default function CommerceSettingsPage() {
 
       const { data: providerRows, error: pre } = await supabase.rpc('admin_list_communication_providers')
       if (pre) throw pre
-      const rows = (providerRows || []) as Provider[]
+      const dbRows = (providerRows || []) as Provider[]
+      const expectedProviders: Provider[] = [
+        { id: null, channel: 'whatsapp', provider_code: 'fonnte', provider_name: 'Fonnte', active: false, is_default: false, public_config: { api_url: 'https://api.fonnte.com/send' }, has_secret: false },
+        { id: null, channel: 'whatsapp', provider_code: 'starsender', provider_name: 'Starsender', active: false, is_default: false, public_config: {}, has_secret: false },
+        { id: null, channel: 'email', provider_code: 'mailketing', provider_name: 'Mailketing', active: false, is_default: false, public_config: {}, has_secret: false },
+        { id: null, channel: 'email', provider_code: 'smtp', provider_name: 'SMTP Hosting', active: false, is_default: false, public_config: {}, has_secret: false },
+      ]
+      const rows = expectedProviders.map(base => {
+        const saved = dbRows.find(r => r.channel === base.channel && r.provider_code === base.provider_code)
+        return saved ? { ...base, ...saved } : base
+      })
       setProviders(rows)
       setProviderDrafts(prev => {
         const next = { ...prev }
@@ -214,6 +226,44 @@ export default function CommerceSettingsPage() {
     }
   }
 
+  const testProvider = async (provider: Provider) => {
+    const target = (testTargets[provider.provider_code] || '').trim()
+    if (!target) {
+      setError(provider.channel === 'whatsapp' ? 'Masukkan nomor WhatsApp tujuan tes.' : 'Masukkan email tujuan tes.')
+      return
+    }
+    setProviderTesting(provider.provider_code)
+    setError(''); setMessage('')
+    try {
+      // Save first so the server test always uses the latest provider config.
+      await saveProvider(provider)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Sesi login tidak ditemukan.')
+
+      const res = await fetch('/api/admin/communication/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          provider_code: provider.provider_code,
+          channel: provider.channel,
+          target,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Tes kirim gagal.')
+      setMessage(provider.channel === 'whatsapp'
+        ? `Tes WhatsApp via ${provider.provider_name} berhasil dikirim ke ${target}.`
+        : `Tes Email via ${provider.provider_name} berhasil dikirim ke ${target}.`)
+    } catch (e: any) {
+      setError(e?.message || 'Tes kirim gagal.')
+    } finally {
+      setProviderTesting('')
+    }
+  }
+
   const logout = async () => { await supabase.auth.signOut(); router.replace('/login') }
   const field = (key: keyof CommerceSettings, value: any) => setForm(v => ({ ...v, [key]: value }))
 
@@ -286,7 +336,7 @@ export default function CommerceSettingsPage() {
                 const d = providerDrafts[p.provider_code]
                 if (!d) return null
                 const isSmtp = p.channel === 'email' && p.provider_code === 'smtp'
-                return <div className="provider-config" key={p.id}>
+                return <div className="provider-config" key={p.provider_code}>
                   <div className="provider-config-head">
                     <div className="provider-ident">
                       <div className="provider-icon">{p.channel === 'whatsapp' ? 'WA' : '@'}</div>
@@ -331,15 +381,28 @@ export default function CommerceSettingsPage() {
                     <Input label="From Email" value={d.sender_address} onChange={v => updateProviderDraft(p.provider_code, 'sender_address', v)} placeholder="noreply@domain.com"/>
                   </div>}
 
+                  <div className="provider-test">
+                    <Input
+                      label={p.channel === 'whatsapp' ? 'Nomor WhatsApp untuk Tes Kirim' : 'Email untuk Tes Kirim'}
+                      value={testTargets[p.provider_code] || ''}
+                      onChange={v => setTestTargets(x => ({ ...x, [p.provider_code]: v }))}
+                      placeholder={p.channel === 'whatsapp' ? '62812xxxxxxxx' : 'emailtujuan@domain.com'}
+                    />
+                  </div>
                   <div className="provider-actions">
                     <span>🔒 Credential lama tetap dipertahankan bila field secret dikosongkan.</span>
-                    <button type="button" onClick={() => void saveProvider(p)} disabled={providerSaving === p.provider_code || loading}>
-                      {providerSaving === p.provider_code ? 'Menyimpan...' : `Simpan ${p.provider_name}`}
-                    </button>
+                    <div className="provider-action-buttons">
+                      <button type="button" className="secondary-test" onClick={() => void testProvider(p)} disabled={providerTesting === p.provider_code || providerSaving === p.provider_code || loading}>
+                        {providerTesting === p.provider_code ? 'Mengirim Tes...' : (p.channel === 'whatsapp' ? 'Tes Kirim WA' : 'Tes Kirim Email')}
+                      </button>
+                      <button type="button" onClick={() => void saveProvider(p)} disabled={providerSaving === p.provider_code || providerTesting === p.provider_code || loading}>
+                        {providerSaving === p.provider_code ? 'Menyimpan...' : `Simpan ${p.provider_name}`}
+                      </button>
+                    </div>
                   </div>
                 </div>
               })}
-              {!loading && providers.length === 0 && <div className="empty">Belum ada provider. Jalankan backend STEP 26 terlebih dahulu.</div>}
+              {!loading && providers.length === 0 && <div className="empty">Provider siap dikonfigurasi.</div>}
               {loading && <div className="empty">Loading provider...</div>}
             </div>
           </section>
@@ -362,7 +425,7 @@ export default function CommerceSettingsPage() {
       .stats{margin-top:20px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.stat{min-height:112px;padding:15px;border:1px solid #dde3ef;border-radius:17px;display:flex;gap:12px;align-items:flex-start;box-shadow:0 12px 30px rgba(41,48,73,.05)}.stat.blue,.blue-card{background:linear-gradient(145deg,#edf5ff,#fff)}.stat.purple,.purple-card{background:linear-gradient(145deg,#f3edff,#fff)}.stat.green,.green-card{background:linear-gradient(145deg,#e9fbf3,#fff)}.stat.pink,.pink-card{background:linear-gradient(145deg,#fff0f7,#fff)}.stat>span{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#ffffffaa;color:#6558f3;font-weight:900}.stat>div{display:grid;gap:4px}.stat small{font-size:11.5px;color:#7e89a0}.stat strong{font-size:28px;line-height:1.05}.stat p{margin:0;color:#8a95aa;font-size:11px;line-height:1.45}
       .grid{margin-top:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.card{border:1px solid #dce2ef;border-radius:18px;padding:18px;box-shadow:0 14px 34px rgba(42,49,75,.045)}.card-head{margin-bottom:16px}.card-head h2{margin:5px 0 4px;font-size:20px}.toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 12px;margin-bottom:8px;border:1px solid #dde3ef;border-radius:12px;background:rgba(255,255,255,.62)}.toggle>div{display:grid;gap:3px}.toggle strong{font-size:13px}.toggle small{font-size:11px;color:#7f8ba0}.switch{position:relative;width:42px;height:24px;border:0;border-radius:20px;background:#cfd5e1;cursor:pointer}.switch.on{background:#6c5cf3}.switch i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.18s}.switch.on i{left:21px}
       .field{display:grid;gap:6px;margin-top:11px}.field label{font-size:12px;font-weight:800;color:#4e5a70}.field input,.field textarea,.field select{width:100%;border:1px solid #d9e0ec;border-radius:11px;padding:11px 12px;outline:none;background:rgba(255,255,255,.72);color:#1c2536;font-size:13.5px}.field textarea{min-height:88px;resize:vertical;line-height:1.5}.field input:focus,.field textarea:focus,.field select:focus{border-color:#8175f5;box-shadow:0 0 0 3px #7568f314}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-      .provider-settings-card{grid-column:1/-1}.provider-config-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.provider-config{padding:14px;border:1px solid #dce2ef;border-radius:15px;background:rgba(255,255,255,.68)}.provider-config-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.provider-ident{display:flex;align-items:center;gap:10px}.provider-ident>div:last-child{display:grid;gap:3px}.provider-ident strong{font-size:14px}.provider-ident small{font-size:11px;color:#7d889d;text-transform:capitalize}.provider-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#edf0ff;color:#6558f3;font-size:10px;font-weight:900}.provider-tags{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.provider-tags b,.provider-tags span{font-size:8px;padding:5px 7px;border-radius:20px}.provider-tags b{background:#eeeaff;color:#6658e9}.provider-tags .active{background:#e3f8ec;color:#128450}.provider-tags .inactive{background:#f3f4f7;color:#7e8797}.provider-switches{display:grid;grid-template-columns:1fr 1fr;gap:8px}.provider-switches .toggle{margin-bottom:0}.provider-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:13px;padding-top:12px;border-top:1px solid #e2e6ef}.provider-actions span{font-size:10.5px;color:#778398;line-height:1.45}.provider-actions button{border:0;border-radius:10px;padding:10px 13px;background:linear-gradient(135deg,#5268ff,#7445ee);color:#fff;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap}.provider-actions button:disabled{opacity:.55;cursor:not-allowed}.empty{padding:25px;text-align:center;color:#8a95a8;font-size:12px}.secure{margin:12px 0 0;font-size:11px;color:#758198;line-height:1.5}
+      .provider-settings-card{grid-column:1/-1}.provider-config-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.provider-config{padding:14px;border:1px solid #dce2ef;border-radius:15px;background:rgba(255,255,255,.68)}.provider-config-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.provider-ident{display:flex;align-items:center;gap:10px}.provider-ident>div:last-child{display:grid;gap:3px}.provider-ident strong{font-size:14px}.provider-ident small{font-size:11px;color:#7d889d;text-transform:capitalize}.provider-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#edf0ff;color:#6558f3;font-size:10px;font-weight:900}.provider-tags{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.provider-tags b,.provider-tags span{font-size:8px;padding:5px 7px;border-radius:20px}.provider-tags b{background:#eeeaff;color:#6658e9}.provider-tags .active{background:#e3f8ec;color:#128450}.provider-tags .inactive{background:#f3f4f7;color:#7e8797}.provider-switches{display:grid;grid-template-columns:1fr 1fr;gap:8px}.provider-switches .toggle{margin-bottom:0}.provider-test{margin-top:10px}.provider-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:13px;padding-top:12px;border-top:1px solid #e2e6ef}.provider-actions span{font-size:10.5px;color:#778398;line-height:1.45}.provider-action-buttons{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.provider-actions button{border:0;border-radius:10px;padding:10px 13px;background:linear-gradient(135deg,#5268ff,#7445ee);color:#fff;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap}.provider-actions button.secondary-test{background:#fff;color:#5749e8;border:1px solid #cfc9ff}.provider-actions button:disabled{opacity:.55;cursor:not-allowed}.empty{padding:25px;text-align:center;color:#8a95a8;font-size:12px}.secure{margin:12px 0 0;font-size:11px;color:#758198;line-height:1.5}
       .savebar{position:sticky;bottom:14px;margin-top:14px;padding:12px 14px;border:1px solid #d8deea;border-radius:15px;background:rgba(255,255,255,.88);backdrop-filter:blur(18px);box-shadow:0 15px 40px rgba(42,48,73,.12);display:flex;justify-content:space-between;align-items:center;gap:15px}.savebar>div{display:grid;gap:3px}.savebar strong{font-size:13px}.savebar span{font-size:11px;color:#7d889d}.savebar button{border:0;border-radius:11px;padding:11px 18px;background:linear-gradient(135deg,#5268ff,#7445ee);color:white;font-size:13px;font-weight:900;cursor:pointer}.savebar button:disabled,.refresh:disabled{opacity:.55;cursor:not-allowed}
       @media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.provider-config-list{grid-template-columns:1fr}}
       @media(max-width:760px){.shell{display:block}.sidebar{position:relative;width:100%;height:auto}.content{padding:20px 14px}.stats{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.savebar{position:static}.head h1{font-size:22px}}
