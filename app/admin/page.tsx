@@ -75,8 +75,6 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] =
     useState(false)
 
-  const [profileOpen, setProfileOpen] =
-    useState(false)
 
   const [search, setSearch] =
     useState('')
@@ -84,12 +82,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadDashboard()
 
-    if (
-      typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).get('profile') === '1'
-    ) {
-      setProfileOpen(true)
-    }
   }, [])
 
   async function loadDashboard() {
@@ -496,7 +488,7 @@ export default function AdminDashboard() {
               }
               router={router}
               onProfile={() =>
-                setProfileOpen(true)
+                router.push('/admin/profile')
               }
             />
           </div>
@@ -506,7 +498,7 @@ export default function AdminDashboard() {
             <button
               className="sidebar-profile"
               onClick={() =>
-                setProfileOpen(true)
+                router.push('/admin/profile')
               }
             >
               <Avatar
@@ -694,7 +686,7 @@ export default function AdminDashboard() {
               <button
                 className="profile-button"
                 onClick={() =>
-                  setProfileOpen(true)
+                  router.push('/admin/profile')
                 }
               >
                 <Avatar
@@ -1235,125 +1227,6 @@ export default function AdminDashboard() {
         </main>
       </div>
 
-      {/* =========================================
-          PROFILE DRAWER
-      ========================================= */}
-
-      {profileOpen && (
-        <div
-          className="profile-overlay"
-          onClick={() =>
-            setProfileOpen(false)
-          }
-        >
-          <aside
-            className="profile-drawer"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
-            <div className="drawer-header">
-              <div>
-                <div className="eyebrow">
-                  ACCOUNT
-                </div>
-
-                <h2>
-                  Admin Profile
-                </h2>
-              </div>
-
-              <button
-                onClick={() =>
-                  setProfileOpen(
-                    false
-                  )
-                }
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="profile-hero">
-              <Avatar
-                url={
-                  currentUser
-                    ?.avatar_url
-                }
-                initials={initials}
-                large
-              />
-
-              <h3>
-                {displayName}
-              </h3>
-
-              <p>
-                {currentEmail}
-              </p>
-
-              <span>
-                {isSuperAdmin
-                  ? 'SUPER ADMIN'
-                  : 'ADMIN'}
-              </span>
-            </div>
-
-            <div className="profile-info">
-
-              <Info
-                label="Nama"
-                value={displayName}
-              />
-
-              <Info
-                label="Email"
-                value={currentEmail}
-              />
-
-              <Info
-                label="Role"
-                value={
-                  isSuperAdmin
-                    ? 'Super Admin'
-                    : 'Admin'
-                }
-              />
-
-              <Info
-                label="Status"
-                value={
-                  currentUser
-                    ?.status ||
-                  'active'
-                }
-              />
-
-            </div>
-
-            <button
-              className="password-button"
-              onClick={() =>
-                router.push(
-                  '/admin/change-password'
-                )
-              }
-            >
-              ◇ Ganti Password
-              <span>→</span>
-            </button>
-
-            <button
-              className="drawer-logout"
-              onClick={logout}
-            >
-              Keluar dari Akun
-            </button>
-
-          </aside>
-        </div>
-      )}
-
       <Styles />
     </>
   )
@@ -1588,7 +1461,11 @@ function Menu({
         className="menu-item"
         onClick={() => {
           onNavigate?.()
-          onProfile?.()
+          if (onProfile) {
+            onProfile()
+          } else {
+            router.push('/admin/profile')
+          }
         }}
       >
         <i>◉</i>
