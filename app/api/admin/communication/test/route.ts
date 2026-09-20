@@ -96,11 +96,21 @@ export async function POST(req: NextRequest) {
           body: form.toString(),
         })
       } else if (providerCode === 'starsender') {
-        const endpoint = String(cfg.api_url || 'https://api.starsender.online/api/send')
+        // Exact working StarSender implementation from the proven PHP gateway.
+        const endpoint = 'https://api.starsender.online/api/send'
         response = await fetch(endpoint, {
           method: 'POST',
-          headers: { Authorization: tokenValue, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messageType: 'text', to, body: message }),
+          headers: {
+            'Authorization': tokenValue,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            messageType: 'text',
+            to,
+            body: message,
+          }),
+          cache: 'no-store',
         })
       } else {
         return NextResponse.json({ ok: false, error: 'Provider WhatsApp belum didukung untuk tes.' }, { status: 400 })
@@ -165,6 +175,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: false, error: 'Provider email belum didukung untuk tes.' }, { status: 400 })
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || 'Tes kirim gagal.' }, { status: 500 })
+    const cause = e?.cause
+    const detail = [
+      e?.message,
+      cause?.code,
+      cause?.message,
+      cause?.hostname ? `host=${cause.hostname}` : '',
+    ].filter(Boolean).join(' | ')
+    return NextResponse.json(
+      { ok: false, error: detail || 'Tes kirim gagal.' },
+      { status: 500 }
+    )
   }
 }
