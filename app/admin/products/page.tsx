@@ -97,6 +97,7 @@ export default function AdminProductsPage() {
   const [categoryManager, setCategoryManager] = useState(false)
   const [categoryName, setCategoryName] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([''])
+  const [uploadingImageIndex, setUploadingImageIndex] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -358,6 +359,51 @@ export default function AdminProductsPage() {
   const removeImage = (index: number) =>
     setImageUrls((rows) => rows.length === 1 ? [''] : rows.filter((_, i) => i !== index))
 
+  const uploadProductImage = async (index: number, file?: File | null) => {
+    if (!file) return
+
+    const allowedTypes = ['image/webp', 'image/jpeg', 'image/png']
+    const maxBytes = 2 * 1024 * 1024
+
+    if (!allowedTypes.includes(file.type)) {
+      setError('Format gambar harus WebP, JPG/JPEG, atau PNG.')
+      return
+    }
+    if (file.size > maxBytes) {
+      setError('Ukuran file maksimal 2 MB. Untuk hemat Supabase Storage, rekomendasi ideal 150–500 KB.')
+      return
+    }
+
+    setError('')
+    setNotice('')
+    setUploadingImageIndex(index)
+
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      if (authError || !authData.user) throw new Error('Sesi login tidak ditemukan.')
+
+      const ext = (file.name.split('.').pop() || 'webp').toLowerCase().replace(/[^a-z0-9]/g, '')
+      const safeExt = ['webp', 'jpg', 'jpeg', 'png'].includes(ext) ? ext : 'webp'
+      const objectPath = `${authData.user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${safeExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-media')
+        .upload(objectPath, file, { cacheControl: '3600', upsert: false, contentType: file.type })
+
+      if (uploadError) throw uploadError
+
+      const { data: publicData } = supabase.storage.from('product-media').getPublicUrl(objectPath)
+      if (!publicData.publicUrl) throw new Error('URL hasil upload tidak dapat dibuat.')
+
+      updateImage(index, publicData.publicUrl)
+      setNotice(`Gambar ${index === 0 ? 'cover' : index + 1} berhasil diupload.`)
+    } catch (e: any) {
+      setError(`Upload gambar gagal: ${e?.message || 'Unknown error'}`)
+    } finally {
+      setUploadingImageIndex(null)
+    }
+  }
+
   const categoryNameById = (id?: string | null) =>
     categories.find((c) => c.id === id)?.name ?? 'Tanpa kategori'
 
@@ -529,15 +575,31 @@ export default function AdminProductsPage() {
               </label>
               <div className="member-info">
                 <span>GALLERY PRODUK — MAKSIMAL 9 GAMBAR</span>
-                <p>Gambar pertama otomatis menjadi cover utama. Paste URL gambar HTTPS.</p>
+                <p>Gambar pertama otomatis menjadi <b>Product Image / Cover</b>. Pilih upload ke Supabase Storage atau gunakan URL gambar eksternal.</p>
+                <div style={{margin:'9px 0 12px',padding:'10px 12px',borderRadius:10,background:'rgba(59,130,246,.08)',border:'1px solid rgba(59,130,246,.16)',color:'#66738a',fontSize:11,lineHeight:1.55}}>
+                  <b style={{color:'#334155'}}>Rekomendasi Product Image:</b> 1200 × 1200 px (1:1), WebP ideal 150–400 KB.<br/>
+                  <b style={{color:'#334155'}}>Rekomendasi Banner:</b> 1600 × 900 px (16:9), WebP ideal 200–500 KB.<br/>
+                  Upload menerima WebP/JPG/PNG maksimal <b>2 MB/file</b>. Gunakan <b>Image URL</b> bila ingin menghemat Supabase Storage.
+                </div>
                 {imageUrls.map((url, index) => (
-                  <div key={index} style={{alignItems:'center'}}>
-                    <strong style={{minWidth:74}}>{index === 0 ? 'Cover' : `Gambar ${index + 1}`}</strong>
-                    <input style={{margin:0,height:38}} value={url} onChange={(e) => updateImage(index,e.target.value)} placeholder="https://.../gambar.jpg" />
-                    <button type="button" className="action" onClick={() => removeImage(index)}>×</button>
+                  <div key={index} style={{display:'grid',gridTemplateColumns:'74px minmax(0,1fr) auto auto',gap:8,alignItems:'center',marginTop:8}}>
+                    <strong>{index === 0 ? 'Cover' : `Gambar ${index + 1}`}</strong>
+                    <input style={{margin:0,height:38,minWidth:0}} value={url} onChange={(e) => updateImage(index,e.target.value)} placeholder="Image URL https://..." />
+                    <label className="action" style={{margin:0,cursor:uploadingImageIndex === index ? 'wait' : 'pointer',whiteSpace:'nowrap'}}>
+                      {uploadingImageIndex === index ? 'Uploading...' : '↑ Upload'}
+                      <input
+                        type="file"
+                        accept="image/webp,image/jpeg,image/png"
+                        disabled={uploadingImageIndex !== null}
+                        onChange={(e) => { void uploadProductImage(index, e.target.files?.[0]); e.currentTarget.value = '' }}
+                        style={{display:'none'}}
+                      />
+                    </label>
+                    <button type="button" className="action" onClick={() => removeImage(index)} disabled={uploadingImageIndex !== null}>×</button>
                   </div>
                 ))}
-                <button type="button" className="action" onClick={addImageField} disabled={imageUrls.length >= 9} style={{marginTop:10}}>＋ Tambah Gambar ({imageUrls.length}/9)</button>
+                <small style={{display:'block',marginTop:9,color:'#8994a8',fontWeight:500}}>Jika upload berhasil, URL hasil upload akan terisi otomatis pada field Image URL. URL eksternal tetap boleh dipaste langsung.</small>
+                <button type="button" className="action" onClick={addImageField} disabled={imageUrls.length >= 9 || uploadingImageIndex !== null} style={{marginTop:10}}>＋ Tambah Gambar ({imageUrls.length}/9)</button>
               </div>
               <label style={{marginTop:13}}>Video Produk (Opsional)
                 <input value={form.video_url} onChange={(e) => setForm({...form,video_url:e.target.value})} placeholder="YouTube, Vimeo, .mp4 atau .webm" />
