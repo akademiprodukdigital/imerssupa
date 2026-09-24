@@ -91,7 +91,7 @@ export default function AdminPaymentsPage(){
       <button className="logout" onClick={logout}>↗ Keluar</button>
     </div>
   </aside>
-  <main className="content"><header><div><span className="eyebrow">COMMERCE / PAYMENTS</span><h1>Payment Management</h1><p>Kelola transaksi pembayaran dan verifikasi bukti pembayaran pelanggan.</p></div><button className="refresh" onClick={()=>void loadData()} disabled={listLoading}>↻ Refresh</button></header>
+  <main className="content"><header><div><span className="eyebrow">COMMERCE / PAYMENTS</span><h1>Payment Management</h1><p>Kelola transaksi pembayaran dan verifikasi bukti pembayaran pelanggan.</p></div><div style={{display:'flex',gap:8,alignItems:'flex-start'}}><button className="refresh" onClick={()=>router.push('/admin/payments/methods')}>◈ Payment Methods</button><button className="refresh" onClick={()=>void loadData()} disabled={listLoading}>↻ Refresh</button></div></header>
   {error&&<div className="error"><span>⚠ {error}</span><button onClick={()=>setError('')}>×</button></div>}
   <section className="stats"><div className="stat"><span>◉</span><div><small>DATA DITEMUKAN</small><strong>{total.toLocaleString('id-ID')}</strong><p>Sesuai filter aktif</p></div></div><div className="stat"><span>⌛</span><div><small>WAITING DI HALAMAN INI</small><strong>{waiting}</strong><p>Perlu verifikasi admin</p></div></div><div className="stat"><span>Rp</span><div><small>NOMINAL HALAMAN INI</small><strong>{money(amount)}</strong><p>{start}–{end} dari {total}</p></div></div></section>
   <section className="panel"><div className="panelHead"><div><span className="eyebrow">TRANSACTIONS</span><h2>Payment Transactions</h2><p>Search, filter, dan pagination aktif sejak awal.</p></div></div>
