@@ -78,7 +78,6 @@ export default function CheckoutPage(){
    </form>
   </main>
  </div>
- </div>
  </>
 
 }
