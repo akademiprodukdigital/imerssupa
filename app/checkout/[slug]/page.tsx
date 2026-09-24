@@ -44,9 +44,11 @@ export default function CheckoutPage(){
   router.push(`/checkout/order/${o.order_id}`);setBusy(false)
  }
 
- if(loading)return <div className="wrap"><div className="main"><div className="card loading">Menyiapkan checkout...</div></div><style jsx global>{styles}</style></div>
+ if(loading)return <><style dangerouslySetInnerHTML={{__html:styles}} /><div className="wrap"><div className="main"><div className="card loading">Menyiapkan checkout...</div></div></div></>
 
- return <div className="wrap">
+ return <>
+  <style dangerouslySetInnerHTML={{__html:styles}} />
+  <div className="wrap">
   <header className="top"><div className="brand"><span className="brandmark">S</span><div><strong>iMersSUPA</strong><small>Checkout</small></div></div><button className="back" onClick={()=>router.push(product?`/product/${product.slug}`:'/')}>← Kembali</button></header>
   <main className="main">
    <div className="intro"><div className="eyebrow">SECURE CHECKOUT</div><h1>Selesaikan Pesanan Anda</h1><p>Lengkapi data di bawah untuk melanjutkan pembelian.</p></div>
@@ -76,6 +78,9 @@ export default function CheckoutPage(){
    </form>
   </main>
  </div>
+ </div>
+ </>
+
 }
 
 const styles=`
@@ -83,7 +88,7 @@ const styles=`
 .wrap{min-height:100vh;background:radial-gradient(circle at 8% 0,rgba(99,102,241,.10),transparent 28%),radial-gradient(circle at 94% 8%,rgba(14,165,233,.10),transparent 27%),linear-gradient(180deg,#f8faff 0%,#f5f7fb 55%,#fff 100%)}
 .top{max-width:1120px;margin:auto;padding:22px 20px;display:flex;justify-content:space-between;align-items:center}.brand{display:flex;align-items:center;gap:11px}.brandmark{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:#fff;font-weight:950;background:linear-gradient(135deg,#14b8a6,#3b82f6 52%,#7c3aed);box-shadow:0 8px 22px rgba(59,130,246,.22)}.brand strong{display:block;font-size:17px}.brand small{display:block;color:#8a95a8;font-size:10px;margin-top:2px}
 .back{border:1px solid #dfe5ef;background:#fff;color:#45536d;border-radius:11px;padding:10px 14px;font-weight:800;box-shadow:0 5px 18px rgba(30,45,80,.05)}
-.main{max-width:1120px;margin:auto;padding:28px 20px 75px}.intro{margin-bottom:24px}.eyebrow{font-size:10px;font-weight:950;letter-spacing:.15em;color:#5867e8}.intro h1{font-size:34px;letter-spacing:-.035em;margin:7px 0}.intro p{margin:0;color:#77839a;font-size:14px}
+.main{max-width:1120px;margin:auto;padding:28px 20px 75px}.intro{margin-bottom:24px}.eyebrow{font-size:10px;font-weight:950;letter-spacing:.15em;color:#5867e8}.intro h1{font-size:34px;letter-spacing:-.035em;margin:7px 0;color:#17213b}.intro p{margin:0;color:#77839a;font-size:14px}
 .grid{display:grid;grid-template-columns:1.35fr .85fr;gap:20px;align-items:start}.card{background:rgba(255,255,255,.94);border:1px solid #e3e8f1;border-radius:22px;padding:24px;box-shadow:0 18px 55px rgba(39,54,86,.08)}
 .cardhead{display:flex;gap:13px;align-items:flex-start;border-bottom:1px solid #edf0f5;padding-bottom:19px;margin-bottom:21px}.step{width:35px;height:35px;border-radius:10px;display:grid;place-items:center;background:#eef2ff;color:#5867e8;font-size:11px;font-weight:950}.card h2{font-size:19px;margin:0 0 5px}.cardhead p{margin:0;color:#8993a7;font-size:12px;line-height:1.5}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.field{display:flex;flex-direction:column;gap:7px;margin-bottom:15px}.field label{font-size:12px;font-weight:850;color:#46536b}.field label span{color:#9aa3b3;font-weight:500}.field input,.field textarea,.couponrow input{background:#fff;border:1px solid #dce2ec;color:#17213b;border-radius:11px;padding:12px 13px;outline:none;transition:.18s}.field textarea{resize:vertical;min-height:86px}.field input:focus,.field textarea:focus,.couponrow input:focus{border-color:#7786ef;box-shadow:0 0 0 3px rgba(99,102,241,.09)}
