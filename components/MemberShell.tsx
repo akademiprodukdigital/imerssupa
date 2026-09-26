@@ -9,7 +9,7 @@ type MemberShellProps = {
   children: ReactNode
   email?: string
   displayName?: string
-  active?: 'dashboard' | 'products' | 'learning' | 'resources' | 'profile'
+  active?: 'dashboard' | 'products' | 'learning' | 'resources' | 'affiliate' | 'profile'
 }
 
 export default function MemberShell({
@@ -46,6 +46,9 @@ export default function MemberShell({
       </button>
       <button className={`ms-nav ${active === 'resources' ? 'active' : ''}`} onClick={() => go('/member?view=resources')}>
         <span className="ms-nav-icon">◆</span><span>Resources</span>
+      </button>
+      <button className={`ms-nav ${active === 'affiliate' ? 'active' : ''}`} onClick={() => go('/member/affiliate')}>
+        <span className="ms-nav-icon">↗</span><span>Affiliate Center</span>
       </button>
       <button className={`ms-nav ${active === 'profile' ? 'active' : ''}`} onClick={() => go('/member')}>
         <span className="ms-nav-icon">◎</span><span>Profile & Account</span>

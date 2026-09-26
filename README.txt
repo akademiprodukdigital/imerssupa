@@ -1,19 +1,17 @@
-iMersSUPA Admin Orders Action Hotfix v1.2
+iMersSUPA MEMBER AFFILIATE CENTER HOTFIX v1.3
 
-UPDATE:
-- Tambah tombol Batalkan Pesanan pada Order Detail untuk order pending/unpaid.
-- Menggunakan RPC backend existing: public.cancel_unpaid_order(uuid,text).
-- Cancel adalah soft lifecycle status, BUKAN hard delete.
-- Order tetap tersimpan untuk history/audit.
-- Setelah cancel, list + detail order otomatis refresh.
-- Tombol tidak muncul untuk paid/completed/refunded/cancelled/expired.
-- UI tetap LIGHT PREMIUM.
+UPDATE EXISTING v1.2:
+1. Replace components/MemberShell.tsx
+2. Add app/member/affiliate/page.tsx
+3. Deploy again.
 
-DATABASE / MIGRATION:
-TIDAK PERLU menjalankan migration SQL baru apabila backend berasal dari iMersSUPA FINAL CLEAN INSTALLER v1.1, karena function cancel_unpaid_order(uuid,text) sudah tersedia dan sudah diberi EXECUTE ke authenticated.
+SQL MIGRATION: NOT REQUIRED for databases installed from FINAL CLEAN v1.2.
+The required affiliate tables, RLS and RPC functions already exist in v1.2:
+- join_affiliate_program()
+- update_affiliate_payout_profile()
+- affiliate_settings / affiliates / product_affiliate_rules
+- affiliate_clicks / affiliate_orders / affiliate_commissions / affiliate_payouts
 
-INSTALL:
-Replace file:
-app/admin/orders/page.tsx
-
-Kemudian deploy ulang frontend ke Vercel.
+IMPORTANT:
+Affiliate Center follows Admin Affiliate Settings. If affiliate_settings.enabled=false,
+member sees "Program Affiliate Belum Aktif" until Super Admin enables it.
