@@ -562,6 +562,17 @@ export default function MemberDashboard() {
 
               <button
                 className="nav-item"
+                onClick={() => {
+                  setMenuOpen(false)
+                  router.push('/member/affiliate')
+                }}
+              >
+                <span className="nav-icon">↗</span>
+                Affiliate Center
+              </button>
+
+              <button
+                className="nav-item"
                 onClick={() => setProfileOpen(true)}
               >
                 <span className="nav-icon">◎</span>
@@ -661,6 +672,17 @@ export default function MemberDashboard() {
                 >
                   <span className="nav-icon">◆</span>
                   Resources
+                </button>
+
+                <button
+                  className="nav-item"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    router.push('/member/affiliate')
+                  }}
+                >
+                  <span className="nav-icon">↗</span>
+                  Affiliate Center
                 </button>
 
                 <button
