@@ -23,18 +23,44 @@ export default function CheckoutPage(){
  useEffect(()=>{void load()},[slug])
 
  async function load(){
-  setLoading(true);setError('')
-  const p=await supabase.from('products').select('id,name,slug,description,price,status').eq('slug',slug).eq('status','published').maybeSingle()
-  if(p.error||!p.data){setError(p.error?.message||'Produk tidak ditemukan.');setLoading(false);return}
-  setProduct(p.data as Product)
-  const u=await supabase.auth.getUser()
-  if(u.data.user){const pr=await supabase.from('profiles').select('full_name,phone').eq('id',u.data.user.id).maybeSingle();setForm(x=>({...x,name:pr.data?.full_name||x.name,email:u.data.user?.email||x.email,phone:pr.data?.phone||x.phone}))}
-  await refreshQuote(p.data.id,coupon);setLoading(false)
+  setLoading(true);setError('');setQuote(null)
+  try{
+   const p=await supabase.from('products').select('id,name,slug,description,price,status').eq('slug',slug).eq('status','published').maybeSingle()
+   if(p.error)throw p.error
+   if(!p.data)throw new Error('Produk tidak ditemukan atau belum dipublish.')
+   setProduct(p.data as Product)
+
+   // Prefill member data is optional. Checkout must continue even when profile lookup fails.
+   try{
+    const u=await supabase.auth.getUser()
+    if(u.data.user){
+     const pr=await supabase.from('profiles').select('full_name,phone').eq('id',u.data.user.id).maybeSingle()
+     setForm(x=>({...x,name:pr.data?.full_name||x.name,email:u.data.user?.email||x.email,phone:pr.data?.phone||x.phone}))
+    }
+   }catch(prefillError){console.warn('Checkout profile prefill skipped:',prefillError)}
+
+   await refreshQuote(p.data.id,coupon,true)
+  }catch(err:any){
+   console.error('Checkout load failed:',err)
+   setError(err?.message||'Checkout gagal dimuat. Silakan coba lagi.')
+  }finally{
+   setLoading(false)
+  }
  }
- async function refreshQuote(productId=product?.id,code=coupon){
-  if(!productId)return
-  const r=await supabase.rpc('get_checkout_quote',{p_items:[{product_id:productId,quantity:1}],p_coupon_code:code.trim()||null,p_visitor_key:visitorKey()})
-  if(r.error){setError(r.error.message);setQuote(null);return}setError('');setQuote(r.data as Quote)
+ async function refreshQuote(productId=product?.id,code=coupon,throwOnError=false){
+  if(!productId){const e=new Error('Produk checkout tidak valid.');if(throwOnError)throw e;setError(e.message);return false}
+  try{
+   const r=await supabase.rpc('get_checkout_quote',{p_items:[{product_id:productId,quantity:1}],p_coupon_code:code.trim()||null,p_visitor_key:visitorKey()})
+   if(r.error)throw r.error
+   if(!r.data)throw new Error('Quote checkout tidak tersedia.')
+   setError('');setQuote(r.data as Quote);return true
+  }catch(err:any){
+   console.error('Checkout quote failed:',err)
+   setQuote(null)
+   if(throwOnError)throw err
+   setError(err?.message||'Gagal menghitung checkout. Silakan coba lagi.')
+   return false
+  }
  }
  async function submit(e:FormEvent){
   e.preventDefault();if(!product||!quote)return;setBusy(true);setError('')
@@ -44,11 +70,11 @@ export default function CheckoutPage(){
   router.push(`/checkout/order/${o.order_id}`);setBusy(false)
  }
 
- if(loading)return <><style dangerouslySetInnerHTML={{__html:styles}} /><div className="wrap"><div className="main"><div className="card loading">Menyiapkan checkout...</div></div></div></>
+ if(loading)return <div className="wrap"><div className="main"><div className="card loading"><strong>Menyiapkan checkout...</strong><span>Mohon tunggu sebentar.</span></div></div><style dangerouslySetInnerHTML={{ __html: styles }} /></div>
 
- return <>
-  <style dangerouslySetInnerHTML={{__html:styles}} />
-  <div className="wrap">
+ if(!product||!quote)return <div className="wrap"><main className="main"><div className="card loaderror"><div className="erroricon">!</div><h2>Checkout belum bisa dimuat</h2><p>{error||'Terjadi kendala saat menyiapkan checkout.'}</p><div className="erroractions"><button className="btn primary" onClick={()=>void load()}>Coba Lagi</button><button className="btn secondary" onClick={()=>router.push('/')}>Kembali</button></div></div></main><style dangerouslySetInnerHTML={{ __html: styles }} /></div>
+
+ return <div className="wrap">
   <header className="top"><div className="brand"><span className="brandmark">S</span><div><strong>iMersSUPA</strong><small>Checkout</small></div></div><button className="back" onClick={()=>router.push(product?`/product/${product.slug}`:'/')}>← Kembali</button></header>
   <main className="main">
    <div className="intro"><div className="eyebrow">SECURE CHECKOUT</div><h1>Selesaikan Pesanan Anda</h1><p>Lengkapi data di bawah untuk melanjutkan pembelian.</p></div>
@@ -78,23 +104,22 @@ export default function CheckoutPage(){
    </form>
   </main>
  </div>
- </>
-
 }
 
-const styles=`
+
+const styles = `
 *{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#17213b;font-family:Inter,Arial,sans-serif}button,input,textarea{font:inherit}button{cursor:pointer}
 .wrap{min-height:100vh;background:radial-gradient(circle at 8% 0,rgba(99,102,241,.10),transparent 28%),radial-gradient(circle at 94% 8%,rgba(14,165,233,.10),transparent 27%),linear-gradient(180deg,#f8faff 0%,#f5f7fb 55%,#fff 100%)}
 .top{max-width:1120px;margin:auto;padding:22px 20px;display:flex;justify-content:space-between;align-items:center}.brand{display:flex;align-items:center;gap:11px}.brandmark{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:#fff;font-weight:950;background:linear-gradient(135deg,#14b8a6,#3b82f6 52%,#7c3aed);box-shadow:0 8px 22px rgba(59,130,246,.22)}.brand strong{display:block;font-size:17px}.brand small{display:block;color:#8a95a8;font-size:10px;margin-top:2px}
 .back{border:1px solid #dfe5ef;background:#fff;color:#45536d;border-radius:11px;padding:10px 14px;font-weight:800;box-shadow:0 5px 18px rgba(30,45,80,.05)}
-.main{max-width:1120px;margin:auto;padding:28px 20px 75px}.intro{margin-bottom:24px}.eyebrow{font-size:10px;font-weight:950;letter-spacing:.15em;color:#5867e8}.intro h1{font-size:34px;letter-spacing:-.035em;margin:7px 0;color:#17213b}.intro p{margin:0;color:#77839a;font-size:14px}
+.main{max-width:1120px;margin:auto;padding:28px 20px 75px}.intro{margin-bottom:24px}.eyebrow{font-size:10px;font-weight:950;letter-spacing:.15em;color:#5867e8}.intro h1{font-size:34px;letter-spacing:-.035em;margin:7px 0}.intro p{margin:0;color:#77839a;font-size:14px}
 .grid{display:grid;grid-template-columns:1.35fr .85fr;gap:20px;align-items:start}.card{background:rgba(255,255,255,.94);border:1px solid #e3e8f1;border-radius:22px;padding:24px;box-shadow:0 18px 55px rgba(39,54,86,.08)}
 .cardhead{display:flex;gap:13px;align-items:flex-start;border-bottom:1px solid #edf0f5;padding-bottom:19px;margin-bottom:21px}.step{width:35px;height:35px;border-radius:10px;display:grid;place-items:center;background:#eef2ff;color:#5867e8;font-size:11px;font-weight:950}.card h2{font-size:19px;margin:0 0 5px}.cardhead p{margin:0;color:#8993a7;font-size:12px;line-height:1.5}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.field{display:flex;flex-direction:column;gap:7px;margin-bottom:15px}.field label{font-size:12px;font-weight:850;color:#46536b}.field label span{color:#9aa3b3;font-weight:500}.field input,.field textarea,.couponrow input{background:#fff;border:1px solid #dce2ec;color:#17213b;border-radius:11px;padding:12px 13px;outline:none;transition:.18s}.field textarea{resize:vertical;min-height:86px}.field input:focus,.field textarea:focus,.couponrow input:focus{border-color:#7786ef;box-shadow:0 0 0 3px rgba(99,102,241,.09)}
 .couponbox{margin-top:5px;padding:16px;border:1px solid #e7eaf2;border-radius:15px;background:#fafbfe}.couponbox b{font-size:12px}.couponbox span{color:#929bad;font-size:11px}.couponrow{display:flex;gap:9px;margin-top:10px}.couponrow input{flex:1}
 .btn{border:0;border-radius:12px;padding:12px 16px;font-weight:900}.btn.primary{background:linear-gradient(135deg,#5268ff,#7548ec 58%,#168eea);color:#fff;box-shadow:0 10px 25px rgba(84,99,235,.22)}.btn.secondary{background:#fff;border:1px solid #dce2ec;color:#4e5a72}.btn:disabled{opacity:.55;cursor:not-allowed}
 .notice{display:flex;gap:10px;padding:12px 14px;border-radius:12px;margin-top:14px;font-size:12px}.notice.error{background:#fff2f2;border:1px solid #ffd3d3;color:#bd3d48}
-.summarycard{position:sticky;top:88px}.summaryhead{display:flex;justify-content:space-between;align-items:center}.badge{display:inline-flex;padding:6px 9px;border-radius:999px;background:#eef2ff;color:#5867e8;font-size:9px;font-weight:950;letter-spacing:.04em}.secure{font-size:10px;color:#39a878;font-weight:800}.summarycard h2{font-size:20px;line-height:1.35;margin:18px 0 5px}.productdesc{color:#8993a7;font-size:12px;line-height:1.55;margin:0 0 17px}.summaryrows{border-top:1px solid #edf0f5}.summaryrows>div{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #edf0f5;font-size:13px}.summaryrows span{color:#758198}.summaryrows strong{color:#26334c}.summaryrows .discount{color:#2eaa79}.softnotice{padding:10px 12px;border-radius:10px;background:#f0fbf6;color:#238761;border:1px solid #d2f0e2;font-size:11px;margin-top:10px}.total{display:flex;justify-content:space-between;align-items:end;padding:18px 0 15px;margin-top:5px;border-top:1px solid #e6eaf1}.total span{font-size:12px;color:#718098}.total strong{font-size:25px;letter-spacing:-.03em;color:#18253e}.summarycard>.btn{width:100%;padding:14px}.trust{text-align:center;color:#9aa4b5;font-size:10px;margin-top:12px}.loading{max-width:1120px;margin:auto}
+.summarycard{position:sticky;top:88px}.summaryhead{display:flex;justify-content:space-between;align-items:center}.badge{display:inline-flex;padding:6px 9px;border-radius:999px;background:#eef2ff;color:#5867e8;font-size:9px;font-weight:950;letter-spacing:.04em}.secure{font-size:10px;color:#39a878;font-weight:800}.summarycard h2{font-size:20px;line-height:1.35;margin:18px 0 5px}.productdesc{color:#8993a7;font-size:12px;line-height:1.55;margin:0 0 17px}.summaryrows{border-top:1px solid #edf0f5}.summaryrows>div{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #edf0f5;font-size:13px}.summaryrows span{color:#758198}.summaryrows strong{color:#26334c}.summaryrows .discount{color:#2eaa79}.softnotice{padding:10px 12px;border-radius:10px;background:#f0fbf6;color:#238761;border:1px solid #d2f0e2;font-size:11px;margin-top:10px}.total{display:flex;justify-content:space-between;align-items:end;padding:18px 0 15px;margin-top:5px;border-top:1px solid #e6eaf1}.total span{font-size:12px;color:#718098}.total strong{font-size:25px;letter-spacing:-.03em;color:#18253e}.summarycard>.btn{width:100%;padding:14px}.trust{text-align:center;color:#9aa4b5;font-size:10px;margin-top:12px}.loading{max-width:1120px;margin:auto;display:flex;flex-direction:column;gap:6px}.loading span{font-size:12px;color:#8993a7}.loaderror{max-width:620px;margin:70px auto;text-align:center}.loaderror h2{margin:12px 0 7px}.loaderror p{margin:0 auto 20px;color:#758198;font-size:13px;line-height:1.6;max-width:480px}.erroricon{width:46px;height:46px;margin:auto;border-radius:14px;display:grid;place-items:center;background:#fff2f2;border:1px solid #ffd3d3;color:#bd3d48;font-size:22px;font-weight:950}.erroractions{display:flex;justify-content:center;gap:10px}
 @media(max-width:800px){.grid{grid-template-columns:1fr}.summarycard{position:static}.fields{grid-template-columns:1fr}.main{padding:20px 16px 55px}.top{padding:17px 16px}.intro h1{font-size:28px}}
 @media(max-width:520px){.couponrow{flex-direction:column}.couponrow .btn{width:100%}.card{padding:18px}.summarycard h2{font-size:18px}}
 `
