@@ -1,24 +1,21 @@
-iMersSUPA v1.7.15 — ORDERS LAYOUT FIX
+iMersSUPA v1.7.16 — PROFESSIONAL IN-APP CONFIRMATION
 
 SQL MIGRATION: NOT REQUIRED
 FRONTEND UPDATE: REQUIRED
 
-BASE:
-Built from the user's uploaded imerssupa-main(3).zip.
-
 FIX:
-- Removes the invalid AdminShell dependency.
-- Orders now carries the same working sidebar geometry/style used by the current Payments page.
-- Sidebar 268px + content margin-left 268px, so content cannot overlap the sidebar.
-- Responsive offset stays synchronized at <=1050px.
-- Mobile <=760px removes sidebar and resets content margin.
-- Keeps Detail > AKTIFKAN ORDER.
-- LIGHT UI only; dark-mode CSS removed.
-- No Content, Products, Payments, Checkout, or other page is replaced.
+- Native browser window.confirm removed from Orders > Detail > AKTIFKAN ORDER.
+- Confirmation now uses a centered iMersSUPA modal inside the application.
+- No browser/URL-origin popup for this action.
+- Keeps v1.7.15 Orders layout/sidebar fix.
+- Keeps direct Orders > Detail > AKTIFKAN ORDER flow.
+- No payment queue required to activate from Order Detail.
+
+RULE GOING FORWARD:
+Do not use window.confirm/window.alert for application UX. Use centered in-app modal/toast.
 
 VALIDATION:
-- AdminShell reference: NONE.
-- Existing Supabase import path checked.
-- TypeScript/JSX syntax diagnostics: PASS.
-- ZIP integrity: PASS.
-- Full npm build was attempted, but dependency installation did not complete in the execution environment, so this README does NOT claim a full Next.js build pass.
+- window.confirm in patched Orders page: NONE
+- window.alert in patched Orders page: NONE
+- TypeScript/JSX syntax diagnostics: PASS
+- ZIP integrity: PASS
