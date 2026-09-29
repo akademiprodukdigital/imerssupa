@@ -38,14 +38,16 @@ export async function ensureMemberAccount(
     invited = true
   }
 
-  const { data: existingProfile, error: profileReadError } = await admin
+  const profileResult = await admin
     .from('profiles')
     .select('id,role,status')
     .eq('id', authUser.id)
     .maybeSingle()
 
-  if (profileReadError) throw profileReadError
-  if (existingProfile && existingProfile.role && existingProfile.role !== 'member') {
+  if (profileResult.error) throw profileResult.error
+  const existingProfile = profileResult.data as { id: string; role: string | null; status: string | null } | null
+
+  if (existingProfile?.role && existingProfile.role !== 'member') {
     throw new Error(`Email ${email} sudah dipakai akun ${existingProfile.role}; tidak diubah menjadi member.`)
   }
 

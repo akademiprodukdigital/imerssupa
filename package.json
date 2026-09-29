@@ -1,6 +1,6 @@
 {
   "name": "imerssupa",
-  "version": "1.7.0",
+  "version": "1.7.19",
   "private": true,
   "scripts": {
     "dev": "next dev",
