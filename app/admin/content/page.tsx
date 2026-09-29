@@ -30,25 +30,6 @@ type LessonForm = {
   external_url:string; sort_order:number; is_published:boolean; is_preview:boolean
 }
 
-type AccessRow = {
-  id: string
-  user_id: string
-  product_id: string
-  access_status: string | null
-  expires_at: string | null
-}
-
-type Product = {
-  id: string
-  name: string
-}
-
-type EditForm = {
-  full_name: string
-  phone: string
-  status: string
-}
-
 const PAGE_SIZES = [10, 25, 50, 100]
 
 export default function AdminContentPage() {
@@ -116,25 +97,7 @@ export default function AdminContentPage() {
   const openEdit=(c:Content)=>{setForm({id:c.id,product_id:c.product_id,section_id:c.section_id||'',title:c.title,content_type:c.content_type,content_text:c.content_text||'',external_url:c.external_url||'',sort_order:c.sort_order,is_published:c.is_published,is_preview:c.is_preview});setLessonModal(true)}
   const saveSection=async()=>{if(!productId||!sectionTitle.trim())return;setSaving(true);setError('');const {error:e}=await supabase.rpc('admin_create_product_section',{p_product_id:productId,p_title:sectionTitle.trim(),p_sort_order:currentSections.length});if(e)setError(e.message);else{setSectionTitle('');setSectionModal(false);setNotice('Section berhasil ditambahkan.');await load()}setSaving(false)}
   const deleteSection=async(s:Section)=>{if(!confirm(`Hapus section "${s.title}"? Hanya bisa dihapus jika tidak memiliki materi.`))return;setSaving(true);const {error:e}=await supabase.rpc('admin_delete_product_section_safe',{p_section_id:s.id});if(e)setError(e.message);else{setNotice('Section berhasil dihapus.');await load()}setSaving(false)}
-  const saveLesson=async(e:FormEvent)=>{
-    e.preventDefault();setSaving(true);setError('')
-    const payload={p_product_id:form.product_id,p_section_id:form.section_id||null,p_title:form.title.trim(),p_content_type:form.content_type,p_content_text:form.content_text.trim()||null,p_external_url:form.external_url.trim()||null,p_sort_order:Number(form.sort_order),p_is_published:form.is_published,p_is_preview:form.is_preview}
-    const r=form.id?await supabase.rpc('admin_update_product_content',{p_content_id:form.id,...payload}):await supabase.rpc('admin_create_product_content',payload)
-    if(r.error){setError(r.error.message);setSaving(false);return}
-    const savedId=form.id || (typeof r.data==='string'?r.data:(r.data as any)?.id||(r.data as any)?.content_id)
-    if(savedId){
-      const verify=await supabase.from('product_contents').select('id,content_type,content_text,external_url').eq('id',savedId).maybeSingle()
-      if(verify.error){setError('Materi tersimpan tetapi verifikasi gagal: '+verify.error.message);setSaving(false);return}
-      if(!verify.data){setError('Materi tidak ditemukan setelah disimpan.');setSaving(false);return}
-      if(form.content_type==='html' && (verify.data.content_type!=='html' || (verify.data.content_text||'').trim()!==form.content_text.trim())){
-        setError('HTML belum tersimpan sesuai isi editor. Materi tidak ditutup agar bisa diperiksa.');setSaving(false);return
-      }
-    }
-    await load()
-    setLessonModal(false)
-    setNotice(form.id?'Materi berhasil diperbarui dan diverifikasi.':'Materi berhasil ditambahkan dan diverifikasi.')
-    setSaving(false)
-  }
+  const saveLesson=async(e:FormEvent)=>{e.preventDefault();setSaving(true);setError('');setNotice('');if(!form.title.trim()){setError('Judul materi wajib diisi.');setSaving(false);return}if((form.content_type==='text'||form.content_type==='html')&&!form.content_text.trim()){setError(form.content_type==='html'?'Kode HTML belum diisi.':'Isi materi belum diisi.');setSaving(false);return}if((form.content_type==='video'||form.content_type==='external_url')&&!form.external_url.trim()){setError('URL konten wajib diisi.');setSaving(false);return}const payload={p_product_id:form.product_id,p_section_id:form.section_id||null,p_title:form.title.trim(),p_content_type:form.content_type,p_content_text:form.content_text.trim()||null,p_external_url:form.external_url.trim()||null,p_sort_order:Number(form.sort_order),p_is_published:form.is_published,p_is_preview:form.is_preview};const r=form.id?await supabase.rpc('admin_update_product_content',{p_content_id:form.id,...payload}):await supabase.rpc('admin_create_product_content',payload);if(r.error){setError(r.error.message);setSaving(false);return}const saved=(r.data??null) as Content|null;if(saved){setContents(prev=>{const without=prev.filter(x=>x.id!==saved.id);return [...without,saved]})}await load();setLessonModal(false);setNotice(form.id?'Materi berhasil diperbarui dan diverifikasi.':'Materi berhasil ditambahkan dan diverifikasi.');setSaving(false)}
   const deleteLesson=async(c:Content)=>{if(!confirm(`Hapus materi "${c.title}"? Progress terkait materi ini juga dapat terpengaruh.`))return;setSaving(true);const {error:e}=await supabase.rpc('admin_delete_product_content_safe',{p_content_id:c.id});if(e)setError(e.message);else{setNotice('Materi berhasil dihapus.');await load()}setSaving(false)}
   const logout=async()=>{await supabase.auth.signOut();router.replace('/login')}
   const initials=(me?.full_name||email||'A').split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()
@@ -147,7 +110,7 @@ export default function AdminContentPage() {
       <nav><p>MAIN MENU</p>
         <button onClick={()=>router.push('/admin')}>⌂ <span>Dashboard</span></button><button onClick={()=>router.push('/admin/members')}>◎ <span>Members</span></button><button onClick={()=>router.push('/admin/products')}>▣ <span>Products</span></button><button className="active">▶ <span>Content</span></button><button onClick={()=>router.push('/admin/access')}>◇ <span>Member Access</span></button><button onClick={()=>router.push('/admin/progress')}>↗ <span>Progress</span></button><button onClick={()=>router.push('/admin/resources')}>◆ <span>Resources</span></button>
         <p>COMMERCE</p><button onClick={()=>router.push('/admin/orders')}>▤ <span>Orders & Transactions</span></button><button onClick={()=>router.push('/admin/payments')}>◫ <span>Payments</span></button><button onClick={()=>router.push('/admin/affiliates')}>⌘ <span>Affiliate & Coupons</span></button><button onClick={()=>router.push('/admin/notifications')}>◌ <span>Notifications</span></button>
-        {me?.role==='super_admin'&&<><p>SUPER ADMIN</p><button onClick={()=>router.push('/admin/administrators')}>♛ <span>Administrators</span></button><button onClick={()=>router.push('/admin/settings')}>⚙ <span>System Settings</span></button><button onClick={()=>router.push('/admin/settings/commerce')}>◈ <span>Commerce Settings</span></button><button onClick={()=>router.push('/admin/security')}>◇ <span>Security / Audit</span></button></>}
+        {me?.role==='super_admin'&&<><p>SUPER ADMIN</p><button onClick={()=>router.push('/admin/agencies')}>♜ <span>Agency Management</span></button><button onClick={()=>router.push('/admin/administrators')}>♛ <span>Administrators</span></button><button onClick={()=>router.push('/admin/settings')}>⚙ <span>System Settings</span></button><button onClick={()=>router.push('/admin/settings/commerce')}>◈ <span>Commerce Settings</span></button><button onClick={()=>router.push('/admin/security')}>◇ <span>Security / Audit</span></button></>}
         <p>ACCOUNT</p><button onClick={()=>router.push('/admin/profile')}>◉ <span>Profile</span></button>
       </nav>
       <div className="sidebar-bottom"><button className="profile-card" onClick={()=>router.push('/admin/profile')}><span className="avatar">{initials}</span><span className="profile-copy"><strong>{me?.full_name||email.split('@')[0]}</strong><small>{email}</small></span></button><button className="logout" onClick={logout}>↗ Keluar</button></div>
@@ -167,7 +130,7 @@ export default function AdminContentPage() {
       </div>
     </main>
     {sectionModal&&<div className="modal-backdrop" onMouseDown={()=>!saving&&setSectionModal(false)}><div className="modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">NEW SECTION</div><h2>Tambah Section</h2><p>Kelompokkan materi agar course lebih terstruktur.</p></div><button className="close" onClick={()=>setSectionModal(false)}>×</button></div><div style={{padding:'20px 22px'}}><label style={{display:'block',fontSize:11,fontWeight:800}}>Nama Section<input style={{display:'block',width:'100%',height:42,border:'1px solid #dce1ec',borderRadius:10,padding:'0 11px',marginTop:6}} value={sectionTitle} onChange={e=>setSectionTitle(e.target.value)} placeholder="Contoh: Mulai Di Sini"/></label><div className="modal-actions"><button className="secondary" onClick={()=>setSectionModal(false)}>Batal</button><button className="primary" onClick={()=>void saveSection()} disabled={saving}>Simpan Section</button></div></div></div></div>}
-    {lessonModal&&<div className="modal-backdrop" onMouseDown={()=>!saving&&setLessonModal(false)}><div className="modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">{form.id?'EDIT CONTENT':'NEW CONTENT'}</div><h2>{form.id?'Kelola Materi':'Tambah Materi'}</h2><p>Text, HTML, video, dan external resource didukung.</p></div><button className="close" onClick={()=>setLessonModal(false)}>×</button></div><form onSubmit={saveLesson}><label>Judul Materi<input value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label><label>Section<select value={form.section_id} onChange={e=>setForm({...form,section_id:e.target.value})}><option value="">Tanpa Section</option>{currentSections.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select></label><label>Tipe Konten<select value={form.content_type} onChange={e=>setForm({...form,content_type:e.target.value as LessonForm['content_type']})}><option value="text">Text</option><option value="html">HTML</option><option value="video">Video</option><option value="external_url">External URL</option></select></label>{(form.content_type==='text'||form.content_type==='html')&&<label>Isi Konten<textarea value={form.content_text} onChange={e=>setForm({...form,content_text:e.target.value})} style={{display:'block',width:'100%',minHeight:150,border:'1px solid #dce1ec',borderRadius:10,padding:11,marginTop:6}}/></label>}{(form.content_type==='video'||form.content_type==='external_url')&&<label>URL<input value={form.external_url} onChange={e=>setForm({...form,external_url:e.target.value})} placeholder="https://..."/></label>}<label>Urutan<input type="number" min="0" value={form.sort_order} onChange={e=>setForm({...form,sort_order:Number(e.target.value)})}/></label><div style={{display:'flex',gap:18,margin:'8px 0 16px'}}><label style={{display:'flex',alignItems:'center',gap:7,margin:0}}><input type="checkbox" checked={form.is_published} onChange={e=>setForm({...form,is_published:e.target.checked})} style={{width:16,height:16,margin:0}}/> Published</label><label style={{display:'flex',alignItems:'center',gap:7,margin:0}}><input type="checkbox" checked={form.is_preview} onChange={e=>setForm({...form,is_preview:e.target.checked})} style={{width:16,height:16,margin:0}}/> Free Preview</label></div><div className="modal-actions"><button type="button" className="secondary" onClick={()=>setLessonModal(false)}>Batal</button><button className="primary" type="submit" disabled={saving}>{saving?'Menyimpan...':'Simpan Materi'}</button></div></form></div></div>}
+    {lessonModal&&<div className="modal-backdrop" onMouseDown={()=>!saving&&setLessonModal(false)}><div className="modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">{form.id?'EDIT CONTENT':'NEW CONTENT'}</div><h2>{form.id?'Kelola Materi':'Tambah Materi'}</h2><p>Text, HTML, video, dan external resource didukung.</p></div><button className="close" onClick={()=>setLessonModal(false)}>×</button></div><form onSubmit={saveLesson}><label>Judul Materi<input value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label><label>Section<select value={form.section_id} onChange={e=>setForm({...form,section_id:e.target.value})}><option value="">Tanpa Section</option>{currentSections.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select></label><label>Tipe Konten<select value={form.content_type} onChange={e=>setForm({...form,content_type:e.target.value as LessonForm['content_type']})}><option value="text">Text</option><option value="html">HTML</option><option value="video">Video</option><option value="external_url">External URL</option></select></label>{(form.content_type==='text'||form.content_type==='html')&&<label>{form.content_type==='html'?'Kode HTML':'Isi Konten'}{form.content_type==='html'&&<small style={{display:'block',fontWeight:500,color:'#7b849c',marginTop:4}}>Tempel HTML lengkap di sini. Setelah disimpan, data dibaca kembali dari database.</small>}<textarea value={form.content_text} onChange={e=>setForm({...form,content_text:e.target.value})} style={{display:'block',width:'100%',minHeight:150,border:'1px solid #dce1ec',borderRadius:10,padding:11,marginTop:6}}/></label>}{(form.content_type==='video'||form.content_type==='external_url')&&<label>URL<input value={form.external_url} onChange={e=>setForm({...form,external_url:e.target.value})} placeholder="https://..."/></label>}<label>Urutan<input type="number" min="0" value={form.sort_order} onChange={e=>setForm({...form,sort_order:Number(e.target.value)})}/></label><div style={{display:'flex',gap:18,margin:'8px 0 16px'}}><label style={{display:'flex',alignItems:'center',gap:7,margin:0}}><input type="checkbox" checked={form.is_published} onChange={e=>setForm({...form,is_published:e.target.checked})} style={{width:16,height:16,margin:0}}/> Published</label><label style={{display:'flex',alignItems:'center',gap:7,margin:0}}><input type="checkbox" checked={form.is_preview} onChange={e=>setForm({...form,is_preview:e.target.checked})} style={{width:16,height:16,margin:0}}/> Free Preview</label></div><div className="modal-actions"><button type="button" className="secondary" onClick={()=>setLessonModal(false)}>Batal</button><button className="primary" type="submit" disabled={saving}>{saving?'Menyimpan...':'Simpan Materi'}</button></div></form></div></div>}
       <style jsx>{`
         *{box-sizing:border-box}
         .admin-page{min-height:100vh;background:radial-gradient(circle at 20% 8%,rgba(209,230,255,.95),transparent 28%),radial-gradient(circle at 92% 78%,rgba(249,218,255,.82),transparent 32%),#f7f8ff;color:#12213a;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -189,22 +152,28 @@ export default function AdminContentPage() {
         @media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 150px}.filters select:last-child{grid-column:2}.sidebar{width:235px}main{margin-left:235px}}
         @media(max-width:820px){.sidebar{display:none}main{margin-left:0}.topbar{padding:0 16px}.search-top{display:none}.content{padding:22px 15px 40px}.stats{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr}.filters select:last-child{grid-column:auto}.pagination{align-items:flex-start;flex-direction:column}header h1{font-size:27px}}
         @media(max-width:520px){.stats{grid-template-columns:1fr}.mini-profile span:last-child{display:none}.panel-head{align-items:flex-start;flex-direction:column}.modal-backdrop{padding:10px}}
-      `}</style>
+      
+      /* ADMIN SIDEBAR MENU STANDARD — reference: app/admin/page.tsx */
+      .sidebar nav p,
+      .sidebar .menu-title{
+        font-size:9px !important;
+        line-height:1.2 !important;
+        font-weight:900 !important;
+        letter-spacing:.14em !important;
+      }
+      .sidebar nav button,
+      .sidebar .menu-item{
+        font-size:13px !important;
+        line-height:1.2 !important;
+        font-weight:700 !important;
+      }
+      .sidebar .menu-item i{
+        font-size:12px !important;
+      }
+`}</style>
     </div>
-  )
 }
 
 function pretty(value: string) {
   return value.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-function date(value?: string | null) {
-  if (!value) return '—'
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return '—'
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsed)
 }
