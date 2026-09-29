@@ -1,15 +1,24 @@
-iMersSUPA v1.7.14
-UI RESTORE / ORDERS ONLY
+iMersSUPA v1.7.15 — ORDERS LAYOUT FIX
 
-FRONTEND:
-- Replaces ONLY app/admin/orders/page.tsx.
-- Uses the AdminShell/shared admin layout.
-- Does NOT replace Content.
-- Adds only Detail > AKTIFKAN ORDER.
+SQL MIGRATION: NOT REQUIRED
+FRONTEND UPDATE: REQUIRED
 
-SQL:
-- Run only if admin_activate_order_simple has not already been installed successfully.
+BASE:
+Built from the user's uploaded imerssupa-main(3).zip.
+
+FIX:
+- Removes the invalid AdminShell dependency.
+- Orders now carries the same working sidebar geometry/style used by the current Payments page.
+- Sidebar 268px + content margin-left 268px, so content cannot overlap the sidebar.
+- Responsive offset stays synchronized at <=1050px.
+- Mobile <=760px removes sidebar and resets content margin.
+- Keeps Detail > AKTIFKAN ORDER.
+- LIGHT UI only; dark-mode CSS removed.
+- No Content, Products, Payments, Checkout, or other page is replaced.
 
 VALIDATION:
-- app/admin/orders/page.tsx TypeScript parser/transpile diagnostics: PASS.
+- AdminShell reference: NONE.
+- Existing Supabase import path checked.
+- TypeScript/JSX syntax diagnostics: PASS.
 - ZIP integrity: PASS.
+- Full npm build was attempted, but dependency installation did not complete in the execution environment, so this README does NOT claim a full Next.js build pass.
