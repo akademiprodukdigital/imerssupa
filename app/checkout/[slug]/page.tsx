@@ -9,10 +9,24 @@ type Quote={currency:string;subtotal:number|string;discount_amount:number|string
 
 const money=(v:any)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(v||0))
 
+let memoryVisitorKey = ''
+function makeUuid(){
+  try{return crypto.randomUUID()}catch{return `guest-${Date.now()}-${Math.random().toString(36).slice(2,12)}`}
+}
 function visitorKey(){
-  let v=localStorage.getItem('imerssupa_visitor_key')
-  if(!v){v=crypto.randomUUID();localStorage.setItem('imerssupa_visitor_key',v)}
-  return v
+  // Storage can be blocked inside sandboxed previews/privacy contexts.
+  // Checkout must keep working without localStorage.
+  try{
+    let v=window.localStorage.getItem('imerssupa_visitor_key')
+    if(!v){v=makeUuid();window.localStorage.setItem('imerssupa_visitor_key',v)}
+    return v
+  }catch{
+    if(!memoryVisitorKey)memoryVisitorKey=makeUuid()
+    return memoryVisitorKey
+  }
+}
+function saveCheckoutToken(orderId:string,token:string){
+  try{window.sessionStorage.setItem(`imerssupa_checkout_${orderId}`,token)}catch{ /* token storage unavailable; order page can still show a controlled error */ }
 }
 
 export default function CheckoutPage(){
@@ -64,9 +78,9 @@ export default function CheckoutPage(){
  }
  async function submit(e:FormEvent){
   e.preventDefault();if(!product||!quote)return;setBusy(true);setError('')
-  const r=await supabase.rpc('create_checkout_order_secure',{p_items:[{product_id:product.id,quantity:1}],p_buyer_name:form.name.trim(),p_buyer_email:form.email.trim().toLowerCase(),p_buyer_phone:form.phone.trim()||null,p_coupon_code:coupon.trim()||null,p_visitor_key:visitorKey(),p_customer_note:form.note.trim()||null,p_idempotency_key:crypto.randomUUID()})
+  const r=await supabase.rpc('create_checkout_order_secure',{p_items:[{product_id:product.id,quantity:1}],p_buyer_name:form.name.trim(),p_buyer_email:form.email.trim().toLowerCase(),p_buyer_phone:form.phone.trim()||null,p_coupon_code:coupon.trim()||null,p_visitor_key:visitorKey(),p_customer_note:form.note.trim()||null,p_idempotency_key:makeUuid()})
   if(r.error){setError(r.error.message);setBusy(false);return}
-  const o=r.data as any;if(o.checkout_token)sessionStorage.setItem(`imerssupa_checkout_${o.order_id}`,o.checkout_token)
+  const o=r.data as any;if(o.checkout_token)saveCheckoutToken(o.order_id,o.checkout_token)
   router.push(`/checkout/order/${o.order_id}`);setBusy(false)
  }
 

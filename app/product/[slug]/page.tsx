@@ -170,10 +170,16 @@ export default function PublicProductPage() {
     const coupon = qs.get('coupon'); const ref = qs.get('ref')
     if (coupon) q.set('coupon', coupon); if (ref) q.set('ref', ref)
     const checkout = `/checkout/${product.slug}${q.size ? `?${q.toString()}` : ''}`
-    const src = product.sales_page_html
+    const rendered = product.sales_page_html
       .replaceAll('{{PRODUCT_NAME}}', product.name)
       .replaceAll('{{CHECKOUT_URL}}', checkout)
-    return <iframe title={product.name} sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts" srcDoc={src} style={{position:'fixed',inset:0,width:'100%',height:'100%',border:0,background:'#fff'}} />
+    // Force links/forms from internal sales pages to escape the sandbox and
+    // navigate the real top-level app. Do NOT add allow-same-origin here.
+    const topBase = '<base target="_top">'
+    const src = /<head[^>]*>/i.test(rendered)
+      ? rendered.replace(/<head([^>]*)>/i, `<head$1>${topBase}`)
+      : `${topBase}${rendered}`
+    return <iframe title={product.name} sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts allow-top-navigation-by-user-activation" srcDoc={src} style={{position:'fixed',inset:0,width:'100%',height:'100%',border:0,background:'#fff'}} />
   }
 
   return (
