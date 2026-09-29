@@ -1,4 +1,10 @@
-iMersSUPA v1.7.4 Checkout Infinite Loading Hotfix
-SQL MIGRATION: NOT REQUIRED
-Replace: app/checkout/[slug]/page.tsx
-Fix: checkout loading is always released with try/catch/finally; backend/quote errors are shown with Retry instead of infinite loading.
+iMersSUPA v1.7.12
+BASE: v1.7.10
+SQL MIGRATION: REQUIRED
+FRONTEND UPDATE: REQUIRED
+
+IMPORTANT:
+- Do NOT upload v1.7.11.
+- This patch intentionally does NOT replace app/admin/content/page.tsx.
+- Only Orders is changed on frontend.
+- Orders > Detail > AKTIFKAN ORDER = Paid + Completed + Member Access.
