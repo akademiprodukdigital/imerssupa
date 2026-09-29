@@ -31,6 +31,8 @@ type Product = {
   image_url?: string | null
   is_featured?: boolean | null
   featured?: boolean | null
+  sales_page_mode?: 'none' | 'internal' | 'external' | null
+  external_sales_page_url?: string | null
 }
 
 type ProductForm = {
@@ -108,6 +110,8 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<Product | null>(null)
   const [createMode, setCreateMode] = useState(false)
+  const [linkProduct, setLinkProduct] = useState<Product | null>(null)
+  const [copiedLink, setCopiedLink] = useState('')
   const [form, setForm] = useState<ProductForm>({ name: '', slug: '', price: '0', status: 'draft', category_id: '', video_url: '', agency_enabled: false, agency_default_slots: '20' })
 
   const load = async () => {
@@ -511,7 +515,7 @@ export default function AdminProductsPage() {
                       <td><span className={`badge ${product.status || 'draft'}`}>{pretty(product.status || 'draft')}</span></td>
                       <td><div className="access-list"><strong>{memberCount(product.id)} member</strong><small>memiliki akses aktif</small></div></td>
                       <td>{date(product.created_at)}</td>
-                      <td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}><button className="action" onClick={() => openEdit(product)}>Kelola</button><button className="action" onClick={() => router.push(`/admin/content?product=${product.id}`)}>Content</button><button className="action" onClick={() => router.push(`/admin/products/${product.id}/salespage`)}>Sales Page</button></div></td>
+                      <td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}><button className="action" onClick={() => openEdit(product)}>Kelola</button><button className="action" onClick={() => router.push(`/admin/content?product=${product.id}`)}>Content</button><button className="action" onClick={() => router.push(`/admin/products/${product.id}/salespage`)}>Sales Page</button><button className="action" onClick={() => {setLinkProduct(product);setCopiedLink('')}}>🔗 Link</button></div></td>
                     </tr>
                    ))}
                 </tbody>
@@ -556,6 +560,28 @@ export default function AdminProductsPage() {
         </div>
       )}
 
+      {linkProduct && (
+        <div className="modal-backdrop" onMouseDown={() => setLinkProduct(null)}>
+          <div className="link-modal" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modal-head"><div><div className="eyebrow">QUICK LINKS</div><h2>{linkProduct.name}</h2><p>Copy link produk tanpa masuk ke editor.</p></div><button className="close" onClick={() => setLinkProduct(null)}>×</button></div>
+            <div className="quick-links">
+              {(() => {
+                const origin = typeof window !== 'undefined' ? window.location.origin : ''
+                const checkout = `${origin}/checkout/${linkProduct.slug}`
+                const internal = `${origin}/product/${linkProduct.slug}`
+                const mode = linkProduct.sales_page_mode || 'none'
+                const sales = mode === 'internal' ? internal : mode === 'external' ? (linkProduct.external_sales_page_url || '') : ''
+                const copyLink = async (key:string, value:string) => { await navigator.clipboard.writeText(value); setCopiedLink(key); window.setTimeout(() => setCopiedLink(''), 1600) }
+                return <>
+                  <div className="quick-row"><div><strong>Direct Checkout</strong><small>Selalu aktif, meskipun tanpa sales page.</small><code>{checkout}</code></div><div className="quick-actions"><button className="action" onClick={() => void copyLink('checkout',checkout)}>{copiedLink==='checkout'?'✓ Tersalin':'Copy'}</button><button className="action" onClick={() => window.open(checkout,'_blank')}>Buka</button></div></div>
+                  <div className="quick-row"><div><strong>Sales Page</strong><small>{mode==='none'?'Tidak digunakan untuk produk ini.':mode==='internal'?'Internal Sales Page iMersSUPA.':'External Sales Page.'}</small>{sales ? <code>{sales}</code> : <code>—</code>}</div><div className="quick-actions">{sales && <><button className="action" onClick={() => void copyLink('sales',sales)}>{copiedLink==='sales'?'✓ Tersalin':'Copy'}</button><button className="action" onClick={() => window.open(sales,'_blank')}>Buka</button></>}<button className="action" onClick={() => router.push(`/admin/products/${linkProduct.id}/salespage`)}>Atur</button></div></div>
+                </>
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
       {(selected || createMode) && (
         <div className="modal-backdrop" onMouseDown={() => !saving && (setSelected(null), setCreateMode(false))}>
           <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -576,11 +602,6 @@ export default function AdminProductsPage() {
               <div className="member-info">
                 <span>GALLERY PRODUK — MAKSIMAL 9 GAMBAR</span>
                 <p>Gambar pertama otomatis menjadi <b>Product Image / Cover</b>. Pilih upload ke Supabase Storage atau gunakan URL gambar eksternal.</p>
-                <div style={{margin:'9px 0 12px',padding:'10px 12px',borderRadius:10,background:'rgba(59,130,246,.08)',border:'1px solid rgba(59,130,246,.16)',color:'#66738a',fontSize:11,lineHeight:1.55}}>
-                  <b style={{color:'#334155'}}>Rekomendasi Product Image:</b> 1200 × 1200 px (1:1), WebP ideal 150–400 KB.<br/>
-                  <b style={{color:'#334155'}}>Rekomendasi Banner:</b> 1600 × 900 px (16:9), WebP ideal 200–500 KB.<br/>
-                  Upload menerima WebP/JPG/PNG maksimal <b>2 MB/file</b>. Gunakan <b>Image URL</b> bila ingin menghemat Supabase Storage.
-                </div>
                 {imageUrls.map((url, index) => (
                   <div key={index} style={{display:'grid',gridTemplateColumns:'74px minmax(0,1fr) auto auto',gap:8,alignItems:'center',marginTop:8}}>
                     <strong>{index === 0 ? 'Cover' : `Gambar ${index + 1}`}</strong>
@@ -600,6 +621,7 @@ export default function AdminProductsPage() {
                 ))}
                 <small style={{display:'block',marginTop:9,color:'#8994a8',fontWeight:500}}>Jika upload berhasil, URL hasil upload akan terisi otomatis pada field Image URL. URL eksternal tetap boleh dipaste langsung.</small>
                 <button type="button" className="action" onClick={addImageField} disabled={imageUrls.length >= 9 || uploadingImageIndex !== null} style={{marginTop:10}}>＋ Tambah Gambar ({imageUrls.length}/9)</button>
+                <small style={{display:'block',marginTop:10,color:'#8994a8',fontWeight:500,lineHeight:1.55}}><b style={{color:'#64748b'}}>Rekomendasi:</b> Product Image 1200 × 1200 px (1:1) · Banner 1600 × 900 px (16:9) · WebP/JPG/PNG · Maks. 2 MB/file. Gunakan Image URL untuk menghemat Supabase Storage.</small>
               </div>
               <label style={{marginTop:13}}>Video Produk (Opsional)
                 <input value={form.video_url} onChange={(e) => setForm({...form,video_url:e.target.value})} placeholder="YouTube, Vimeo, .mp4 atau .webm" />
@@ -616,6 +638,17 @@ export default function AdminProductsPage() {
                   <input type="number" min="1" value={form.agency_default_slots} onChange={(e) => setForm({...form,agency_default_slots:e.target.value})} />
                   <small style={{display:'block',marginTop:5,color:'#8994a8',fontWeight:500}}>Contoh 20 = satu entitlement Agency default dapat membuat/memberi akses maksimal 20 member untuk produk ini. Slot per Agency tetap bisa dioverride.</small>
                 </label>}
+              </div>
+              <div className="member-info" style={{marginTop:13}}>
+                <span>SALES PAGE & CHECKOUT</span>
+                {createMode ? (
+                  <p>Simpan produk terlebih dahulu. Setelah produk dibuat, konfigurasi <b>Internal HTML</b>, <b>External URL</b>, atau <b>Tanpa Sales Page</b> melalui tombol <b>Sales Page</b>. Direct Checkout tetap dapat digunakan tanpa salespage.</p>
+                ) : selected ? (
+                  <>
+                    <p>Salespage bersifat opsional. Direct Checkout produk tetap aktif dan dapat dipasang di website atau landing page lain.</p>
+                    <button type="button" className="action" onClick={() => router.push(`/admin/products/${selected.id}/salespage`)}>⚡ Buka Sales Page & Checkout</button>
+                  </>
+                ) : null}
               </div>
               <label>Status<select value={form.status} onChange={(e) => setForm({...form,status:e.target.value})}><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
               {!createMode && selected && <div className="member-info"><span>PRODUCT SUMMARY</span><div><strong>Active Member Access</strong><small>{memberCount(selected.id)} member</small></div><div><strong>Product ID</strong><small>{selected.id}</small></div></div>}
@@ -645,7 +678,7 @@ export default function AdminProductsPage() {
         .filters{padding:12px 20px;display:grid;grid-template-columns:minmax(260px,1fr) 160px 135px;gap:9px;border-bottom:1px solid #e7eaf2}.searchbox{height:42px;border:1px solid #dfe4ef;border-radius:11px;display:flex;align-items:center;padding-left:12px;color:#8995aa;background:#fbfcff}.searchbox input{border:0;outline:0;background:transparent;width:100%;height:100%;padding:0 10px;font-size:12.5px;color:#22304a}.filters select{height:42px;border:1px solid #dfe4ef;border-radius:11px;background:white;padding:0 10px;font-size:12px;color:#34415a;outline:0}
         .table-wrap{overflow:auto;min-height:330px}table{width:100%;border-collapse:collapse;font-size:12px}th{font-size:9.5px;letter-spacing:.09em;color:#7f8ba2;text-align:left;background:#fafbfe;padding:11px 14px;white-space:nowrap}td{padding:13px 14px;border-top:1px solid #edf0f5;color:#526078;vertical-align:middle}tbody tr:hover{background:#fbfcff}.member-cell{display:flex;align-items:center;gap:10px;min-width:180px}.member-avatar{width:35px;height:35px;border-radius:10px;background:linear-gradient(135deg,#4f5bf6,#7956f4);color:white;display:grid;place-items:center;font-weight:900}.member-cell strong{display:block;font-size:12.5px;color:#18253d}.member-cell small{display:block;font-size:9.5px;color:#929bad;margin-top:2px}.badge{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:9.5px;font-weight:900;text-transform:uppercase}.badge.active,.badge.published{background:#e8f9ef;color:#16864b}.badge.inactive,.badge.draft{background:#f0f2f6;color:#707c91}.badge.suspended,.badge.archived{background:#fff0f1;color:#d44952}.access-list strong{display:block;color:#26344d;font-size:11.5px}.access-list small{display:block;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9.5px;color:#8994a8;margin-top:2px}.muted{color:#9aa3b4;font-size:11px}.action{height:32px;padding:0 11px;border:1px solid #d7d9ff;background:linear-gradient(110deg,#f1f3ff,#f8f4ff);color:#5149d9;border-radius:9px;font-size:11px;font-weight:800;cursor:pointer}.empty{text-align:center;height:230px;color:#929caf}
         .pagination{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 20px;border-top:1px solid #e7eaf2;color:#8a95a8;font-size:10.5px}.pagination div{display:flex;align-items:center;gap:9px}.pagination button{height:32px;padding:0 10px;border:1px solid #e0e4ed;background:white;border-radius:9px;font-size:10px;color:#66738a}.pagination button:disabled{opacity:.4}.pagination strong{font-size:10.5px;color:#59667e}
-        .modal-backdrop{position:fixed;inset:0;background:rgba(20,28,48,.38);backdrop-filter:blur(5px);z-index:80;display:grid;place-items:center;padding:20px}.modal{width:min(560px,100%);max-height:90vh;overflow:auto;background:#fbfcff;border:1px solid #e1e5ef;border-radius:20px;box-shadow:0 30px 80px rgba(29,36,64,.24)}.modal-head{padding:20px 22px 15px;border-bottom:1px solid #e8ebf2;display:flex;justify-content:space-between;gap:15px}.modal-head h2{font-size:22px;margin:4px 0}.modal-head p{font-size:12px;color:#7d899f;margin:0}.close{width:34px;height:34px;border:1px solid #dfe3ec;background:white;border-radius:10px;font-size:20px;cursor:pointer}.modal form{padding:20px 22px}.modal label{display:block;font-size:11px;font-weight:800;color:#45536c;margin-bottom:13px}.modal input,.modal select{display:block;width:100%;height:42px;border:1px solid #dce1ec;border-radius:10px;background:white;padding:0 11px;margin-top:6px;font-size:12px;outline:0}.member-info{border:1px solid #e0e4ed;background:linear-gradient(135deg,#f7f9ff,#fbf8ff);border-radius:13px;padding:13px;margin-top:5px}.member-info>span{font-size:9px;letter-spacing:.12em;color:#7269e8;font-weight:900}.member-info div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #e8eaf2}.member-info div:last-child{border-bottom:0}.member-info strong{font-size:11.5px}.member-info small{font-size:10px;color:#8590a5}.member-info p{font-size:11px;color:#8994a8;margin:9px 0 2px}.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.modal-actions button{height:40px;padding:0 14px;border-radius:10px;font-size:11.5px;font-weight:850;cursor:pointer}.secondary{border:1px solid #dfe3ec;background:white;color:#56637a}.primary{border:0;background:linear-gradient(135deg,#5b59f6,#7650ef);color:white}
+        .link-modal{width:min(650px,100%);background:#fbfcff;border:1px solid #e1e5ef;border-radius:20px;box-shadow:0 30px 80px rgba(29,36,64,.24);overflow:hidden}.quick-links{padding:18px 22px 22px}.quick-row{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;padding:16px 0;border-bottom:1px solid #e8ebf2}.quick-row:last-child{border-bottom:0}.quick-row>div:first-child{min-width:0;flex:1}.quick-row strong{display:block;font-size:12px;color:#26344d}.quick-row small{display:block;color:#8994a8;font-size:10px;margin:4px 0 8px}.quick-row code{display:block;overflow:auto;white-space:nowrap;background:#f4f6fb;border:1px solid #e1e5ef;border-radius:9px;padding:9px;font-size:10px;color:#526078}.quick-actions{display:flex;gap:6px;flex-wrap:wrap}.quick-actions .action{white-space:nowrap}@media(max-width:650px){.quick-row{align-items:stretch;flex-direction:column}.quick-actions{justify-content:flex-end}}.modal-backdrop{position:fixed;inset:0;background:rgba(20,28,48,.38);backdrop-filter:blur(5px);z-index:80;display:grid;place-items:center;padding:20px}.modal{width:min(560px,100%);max-height:90vh;overflow:auto;background:#fbfcff;border:1px solid #e1e5ef;border-radius:20px;box-shadow:0 30px 80px rgba(29,36,64,.24)}.modal-head{padding:20px 22px 15px;border-bottom:1px solid #e8ebf2;display:flex;justify-content:space-between;gap:15px}.modal-head h2{font-size:22px;margin:4px 0}.modal-head p{font-size:12px;color:#7d899f;margin:0}.close{width:34px;height:34px;border:1px solid #dfe3ec;background:white;border-radius:10px;font-size:20px;cursor:pointer}.modal form{padding:20px 22px}.modal label{display:block;font-size:11px;font-weight:800;color:#45536c;margin-bottom:13px}.modal input,.modal select{display:block;width:100%;height:42px;border:1px solid #dce1ec;border-radius:10px;background:white;padding:0 11px;margin-top:6px;font-size:12px;outline:0}.member-info{border:1px solid #e0e4ed;background:linear-gradient(135deg,#f7f9ff,#fbf8ff);border-radius:13px;padding:13px;margin-top:5px}.member-info>span{font-size:9px;letter-spacing:.12em;color:#7269e8;font-weight:900}.member-info div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #e8eaf2}.member-info div:last-child{border-bottom:0}.member-info strong{font-size:11.5px}.member-info small{font-size:10px;color:#8590a5}.member-info p{font-size:11px;color:#8994a8;margin:9px 0 2px}.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.modal-actions button{height:40px;padding:0 14px;border-radius:10px;font-size:11.5px;font-weight:850;cursor:pointer}.secondary{border:1px solid #dfe3ec;background:white;color:#56637a}.primary{border:0;background:linear-gradient(135deg,#5b59f6,#7650ef);color:white}
         @media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 150px}.filters select:last-child{grid-column:2}.sidebar{width:235px}main{margin-left:235px}}
         @media(max-width:820px){.sidebar{display:none}main{margin-left:0}.topbar{padding:0 16px}.search-top{display:none}.content{padding:22px 15px 40px}.stats{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr}.filters select:last-child{grid-column:auto}.pagination{align-items:flex-start;flex-direction:column}header h1{font-size:27px}}
         @media(max-width:520px){.stats{grid-template-columns:1fr}.mini-profile span:last-child{display:none}.panel-head{align-items:flex-start;flex-direction:column}.modal-backdrop{padding:10px}}

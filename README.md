@@ -1,12 +1,10 @@
-# iMersSUPA HOTFIX v1.7.1
+# iMersSUPA HOTFIX v1.7.3
 
 SQL MIGRATION: NOT REQUIRED
 FRONTEND UPDATE: REQUIRED
 
-Fix:
-- JSX syntax error pada app/admin/products/[id]/salespage/page.tsx
-- Placeholder JSX diperbaiki menjadi expression string valid:
-  - {'{{PRODUCT_NAME}}'}
-  - {'{{CHECKOUT_URL}}'}
+Untuk instalasi existing yang sudah memakai Sales Page Manager v1.7/v1.7.1. Replace 2 file sesuai struktur:
+- app/admin/products/page.tsx
+- app/admin/products/[id]/salespage/page.tsx
 
-Replace file sesuai struktur folder lalu deploy ulang.
+Hotfix ini sudah mencakup perapihan Product UI v1.7.2, jadi jika Anda belum memasang v1.7.2 tidak perlu memasangnya terlebih dahulu.
