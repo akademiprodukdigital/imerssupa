@@ -7,7 +7,7 @@ export type EnsureMemberInput = {
 }
 
 export async function ensureMemberAccount(
-  admin: ReturnType<typeof createClient>,
+  admin: any,
   input: EnsureMemberInput
 ) {
   const email = input.email.trim().toLowerCase()
