@@ -99,10 +99,16 @@ export default function AdminOrdersPage() {
     setConfirmActivateId(null)
     setActivating(true)
     setError('')
-    const { data,error:activateError } = await supabase.rpc('admin_activate_order_simple',{p_order_id:orderId})
-    if (activateError) setError(activateError.message)
+    const { data:{session} } = await supabase.auth.getSession()
+    const response = await fetch('/api/admin/orders/activate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:`Bearer ${session?.access_token || ''}`},
+      body:JSON.stringify({order_id:orderId}),
+    })
+    const result = await response.json()
+    if (!response.ok) setError(result.error || 'Gagal mengaktifkan order.')
     else {
-      setDetail(data as OrderDetail)
+      setDetail(result.detail as OrderDetail)
       await loadData()
     }
     setActivating(false)

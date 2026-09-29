@@ -9,16 +9,10 @@ type Quote={currency:string;subtotal:number|string;discount_amount:number|string
 
 const money=(v:any)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(v||0))
 
-let memoryVisitorKey=''
 function visitorKey(){
- try{
-  let v=window.localStorage.getItem('imerssupa_visitor_key')
-  if(!v){v=crypto.randomUUID();window.localStorage.setItem('imerssupa_visitor_key',v)}
+  let v=localStorage.getItem('imerssupa_visitor_key')
+  if(!v){v=crypto.randomUUID();localStorage.setItem('imerssupa_visitor_key',v)}
   return v
- }catch{
-  if(!memoryVisitorKey)memoryVisitorKey=crypto.randomUUID()
-  return memoryVisitorKey
- }
 }
 
 export default function CheckoutPage(){
@@ -30,23 +24,12 @@ export default function CheckoutPage(){
 
  async function load(){
   setLoading(true);setError('')
-  try{
-   const p=await supabase.from('products').select('id,name,slug,description,price,status').eq('slug',slug).eq('status','published').maybeSingle()
-   if(p.error||!p.data){setError(p.error?.message||'Produk tidak ditemukan.');return}
-   setProduct(p.data as Product)
-   try{
-    const u=await supabase.auth.getUser()
-    if(u.data.user){
-     const pr=await supabase.from('profiles').select('full_name,phone').eq('id',u.data.user.id).maybeSingle()
-     setForm(x=>({...x,name:pr.data?.full_name||x.name,email:u.data.user?.email||x.email,phone:pr.data?.phone||x.phone}))
-    }
-   }catch{}
-   await refreshQuote(p.data.id,coupon)
-  }catch(e:any){
-   setError(e?.message||'Checkout belum bisa dimuat. Silakan coba lagi.')
-  }finally{
-   setLoading(false)
-  }
+  const p=await supabase.from('products').select('id,name,slug,description,price,status').eq('slug',slug).eq('status','published').maybeSingle()
+  if(p.error||!p.data){setError(p.error?.message||'Produk tidak ditemukan.');setLoading(false);return}
+  setProduct(p.data as Product)
+  const u=await supabase.auth.getUser()
+  if(u.data.user){const pr=await supabase.from('profiles').select('full_name,phone').eq('id',u.data.user.id).maybeSingle();setForm(x=>({...x,name:pr.data?.full_name||x.name,email:u.data.user?.email||x.email,phone:pr.data?.phone||x.phone}))}
+  await refreshQuote(p.data.id,coupon);setLoading(false)
  }
  async function refreshQuote(productId=product?.id,code=coupon){
   if(!productId)return
@@ -55,17 +38,18 @@ export default function CheckoutPage(){
  }
  async function submit(e:FormEvent){
   e.preventDefault();if(!product||!quote)return;setBusy(true);setError('')
+  const memberResponse=await fetch('/api/checkout/ensure-member',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:product.id,full_name:form.name.trim(),email:form.email.trim().toLowerCase(),phone:form.phone.trim()||null})})
+  const memberResult=await memberResponse.json()
+  if(!memberResponse.ok){setError(memberResult.error||'Gagal menyiapkan akun member.');setBusy(false);return}
   const r=await supabase.rpc('create_checkout_order_secure',{p_items:[{product_id:product.id,quantity:1}],p_buyer_name:form.name.trim(),p_buyer_email:form.email.trim().toLowerCase(),p_buyer_phone:form.phone.trim()||null,p_coupon_code:coupon.trim()||null,p_visitor_key:visitorKey(),p_customer_note:form.note.trim()||null,p_idempotency_key:crypto.randomUUID()})
   if(r.error){setError(r.error.message);setBusy(false);return}
-  const o=r.data as any;if(o.checkout_token){try{window.sessionStorage.setItem(`imerssupa_checkout_${o.order_id}`,o.checkout_token)}catch{}}
+  const o=r.data as any;if(o.checkout_token)sessionStorage.setItem(`imerssupa_checkout_${o.order_id}`,o.checkout_token)
   router.push(`/checkout/order/${o.order_id}`);setBusy(false)
  }
 
  if(loading)return <div className="wrap"><div className="main"><div className="card loading">Menyiapkan checkout...</div></div><style dangerouslySetInnerHTML={{ __html: styles }} /></div>
 
- return <>
-  <style dangerouslySetInnerHTML={{__html:styles}} />
-  <div className="wrap">
+ return <div className="wrap">
   <header className="top"><div className="brand"><span className="brandmark">S</span><div><strong>iMersSUPA</strong><small>Checkout</small></div></div><button className="back" onClick={()=>router.push(product?`/product/${product.slug}`:'/')}>← Kembali</button></header>
   <main className="main">
    <div className="intro"><div className="eyebrow">SECURE CHECKOUT</div><h1>Selesaikan Pesanan Anda</h1><p>Lengkapi data di bawah untuk melanjutkan pembelian.</p></div>
@@ -95,7 +79,6 @@ export default function CheckoutPage(){
    </form>
   </main>
  </div>
- </>
 }
 
 
