@@ -15,6 +15,9 @@ type Product = {
   thumbnail_url?: string | null
   image_url?: string | null
   type?: string | null
+  sales_page_mode?: 'none' | 'internal' | 'external' | null
+  sales_page_html?: string | null
+  external_sales_page_url?: string | null
 }
 
 type Media = {
@@ -32,6 +35,12 @@ const money = (v: any) =>
         currency: 'IDR',
         maximumFractionDigits: 0,
       }).format(Number(v || 0))
+
+function visitorKey() {
+  let v = localStorage.getItem('imerssupa_visitor_key')
+  if (!v) { v = crypto.randomUUID(); localStorage.setItem('imerssupa_visitor_key', v) }
+  return v
+}
 
 export default function PublicProductPage() {
   const params = useParams()
@@ -82,6 +91,28 @@ export default function PublicProductPage() {
       setImage(x.url || x.media_url || '')
     }
 
+    const ref = qs.get('ref')?.trim()
+    if (ref) {
+      await supabase.rpc('track_affiliate_referral', {
+        p_referral_code: ref,
+        p_visitor_key: visitorKey(),
+        p_product_id: p.id,
+        p_landing_path: window.location.pathname + window.location.search,
+        p_referrer_url: document.referrer || null,
+      })
+    }
+
+    if (p.sales_page_mode === 'external' && p.external_sales_page_url) {
+      try {
+        const u = new URL(p.external_sales_page_url)
+        const coupon = qs.get('coupon')
+        if (ref) u.searchParams.set('ref', ref)
+        if (coupon) u.searchParams.set('coupon', coupon)
+        window.location.replace(u.toString())
+        return
+      } catch { /* invalid URL falls back to native product page */ }
+    }
+
     setLoading(false)
   }
 
@@ -89,7 +120,9 @@ export default function PublicProductPage() {
     if (!product) return
     const q = new URLSearchParams()
     const coupon = qs.get('coupon')
+    const ref = qs.get('ref')
     if (coupon) q.set('coupon', coupon)
+    if (ref) q.set('ref', ref)
     router.push(`/checkout/${product.slug}${q.size ? `?${q.toString()}` : ''}`)
   }
 
@@ -130,6 +163,17 @@ export default function PublicProductPage() {
         <style jsx global>{styles}</style>
       </div>
     )
+  }
+
+  if (product.sales_page_mode === 'internal' && product.sales_page_html) {
+    const q = new URLSearchParams()
+    const coupon = qs.get('coupon'); const ref = qs.get('ref')
+    if (coupon) q.set('coupon', coupon); if (ref) q.set('ref', ref)
+    const checkout = `/checkout/${product.slug}${q.size ? `?${q.toString()}` : ''}`
+    const src = product.sales_page_html
+      .replaceAll('{{PRODUCT_NAME}}', product.name)
+      .replaceAll('{{CHECKOUT_URL}}', checkout)
+    return <iframe title={product.name} sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts" srcDoc={src} style={{position:'fixed',inset:0,width:'100%',height:'100%',border:0,background:'#fff'}} />
   }
 
   return (

@@ -511,7 +511,7 @@ export default function AdminProductsPage() {
                       <td><span className={`badge ${product.status || 'draft'}`}>{pretty(product.status || 'draft')}</span></td>
                       <td><div className="access-list"><strong>{memberCount(product.id)} member</strong><small>memiliki akses aktif</small></div></td>
                       <td>{date(product.created_at)}</td>
-                      <td><div style={{display:'flex',gap:6}}><button className="action" onClick={() => openEdit(product)}>Kelola</button><button className="action" onClick={() => router.push(`/admin/content?product=${product.id}`)}>Content</button></div></td>
+                      <td><div style={{display:'flex',gap:6,flexWrap:'wrap'}}><button className="action" onClick={() => openEdit(product)}>Kelola</button><button className="action" onClick={() => router.push(`/admin/content?product=${product.id}`)}>Content</button><button className="action" onClick={() => router.push(`/admin/products/${product.id}/salespage`)}>Sales Page</button></div></td>
                     </tr>
                    ))}
                 </tbody>
