@@ -56,23 +56,9 @@ export default function AgencyDashboard(){
 
  return <div className="agency-page">
   <aside>
-   <div className="brand"><b>A</b><div><strong>iMersSUPA</strong><small>MEMBER + AGENCY</small></div></div>
+   <div className="brand"><b>A</b><div><strong>iMersSUPA</strong><small>AGENCY CENTER</small></div></div>
    <div className="role"><span>★</span><div><small>LOGGED IN AS</small><strong>Agency</strong></div></div>
-   <nav>
-    <p>MEMBER AREA</p>
-    <button onClick={()=>router.push('/member')}>⌂ <span>Dashboard</span></button>
-    <button onClick={()=>router.push('/member?view=products')}>▣ <span>Produk Saya</span></button>
-    <button onClick={()=>router.push('/member?view=learning')}>▶ <span>Lanjut Belajar</span></button>
-    <button onClick={()=>router.push('/member?view=resources')}>◆ <span>Resources</span></button>
-    <button onClick={()=>router.push('/member/affiliate')}>⌘ <span>Affiliate Center</span></button>
-    <p>AGENCY TOOLS</p>
-    <button className="active">◇ <span>Agency Dashboard</span></button>
-    <button onClick={()=>document.getElementById('products')?.scrollIntoView({behavior:'smooth'})}>▦ <span>Produk & Lisensi Agency</span></button>
-    <button onClick={()=>document.getElementById('members')?.scrollIntoView({behavior:'smooth'})}>◎ <span>Member Saya</span></button>
-    <button onClick={openCreate}>＋ <span>Buat Member</span></button>
-    <p>ACCOUNT</p>
-    <button onClick={()=>router.push('/agency/profile')}>◉ <span>Profile & Account</span></button>
-   </nav>
+   <nav><p>MEMBER AREA</p><button onClick={()=>router.push('/member')}>⌂ <span>Kembali ke Member Area</span></button><p>AGENCY TOOLS</p><button className="active">⌂ <span>Dashboard</span></button><button onClick={()=>document.getElementById('products')?.scrollIntoView({behavior:'smooth'})}>▣ <span>Produk & Lisensi</span></button><button onClick={()=>document.getElementById('members')?.scrollIntoView({behavior:'smooth'})}>◎ <span>Member Saya</span></button><button onClick={openCreate}>＋ <span>Buat Member</span></button><p>ACCOUNT</p><button onClick={()=>router.push('/agency/profile')}>◉ <span>Profile</span></button></nav>
    <div className="bottom"><button onClick={()=>router.push('/agency/profile')}><i>{initials}</i><span><strong>{me?.full_name||'Agency'}</strong><small>{email}</small></span></button><button className="logout" onClick={logout}>↗ Keluar</button></div>
   </aside>
   <main>

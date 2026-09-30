@@ -571,6 +571,19 @@ export default function MemberDashboard() {
                 Affiliate Center
               </button>
 
+              {profile?.role === 'agency' && (
+                <>
+                  <div className="menu-label agency-menu-label">AGENCY TOOLS</div>
+                  <button
+                    className="nav-item"
+                    onClick={() => router.push('/agency')}
+                  >
+                    <span className="nav-icon">◇</span>
+                    Kelola Member & Akses
+                  </button>
+                </>
+              )}
+
               <button
                 className="nav-item"
                 onClick={() => setProfileOpen(true)}
@@ -684,6 +697,22 @@ export default function MemberDashboard() {
                   <span className="nav-icon">↗</span>
                   Affiliate Center
                 </button>
+
+                {profile?.role === 'agency' && (
+                  <>
+                    <div className="menu-label agency-menu-label">AGENCY TOOLS</div>
+                    <button
+                      className="nav-item"
+                      onClick={() => {
+                        setMenuOpen(false)
+                        router.push('/agency')
+                      }}
+                    >
+                      <span className="nav-icon">◇</span>
+                      Kelola Member & Akses
+                    </button>
+                  </>
+                )}
 
                 <button
                   className="nav-item"

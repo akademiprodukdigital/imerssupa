@@ -172,7 +172,7 @@ export default function LoginPage() {
     }
 
     if (role === 'agency') {
-      router.replace('/agency')
+      router.replace('/member')
       router.refresh()
       return
     }
