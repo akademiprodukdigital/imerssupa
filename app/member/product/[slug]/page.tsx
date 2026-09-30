@@ -234,6 +234,15 @@ export default function MemberProductPage() {
 
   const totalLessons = contents.length
 
+  const displaySections = useMemo<Section[]>(() => {
+    const hasUnsectioned = contents.some((content) => !content.section_id)
+    if (!hasUnsectioned) return sections
+    return [
+      { id: '__unsectioned__', product_id: product?.id ?? '', title: 'Materi Utama', sort_order: -1 },
+      ...sections,
+    ]
+  }, [contents, sections, product?.id])
+
   const completedLessons = useMemo(() => {
     return contents.filter((content) => {
       const row = progressMap.get(content.id)
@@ -296,7 +305,9 @@ export default function MemberProductPage() {
 
   function getSectionContents(sectionId: string) {
     return contents
-      .filter((content) => content.section_id === sectionId)
+      .filter((content) =>
+        sectionId === '__unsectioned__' ? !content.section_id : content.section_id === sectionId
+      )
       .sort((a, b) => a.sort_order - b.sort_order)
   }
 
@@ -535,7 +546,7 @@ export default function MemberProductPage() {
           </div>
 
           <div style={styles.contentCount}>
-            {sections.length} Module • {totalLessons} Lesson
+            {displaySections.length} Module • {totalLessons} Lesson
           </div>
         </div>
 
@@ -544,7 +555,7 @@ export default function MemberProductPage() {
         ==================================================== */}
 
         <div style={styles.sectionList}>
-          {sections.map((section, sectionIndex) => {
+          {displaySections.map((section, sectionIndex) => {
             const sectionContents =
               getSectionContents(section.id)
 
@@ -914,7 +925,7 @@ const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: 'auto',
     padding: 0,
-    color: '#ffffff',
+    color: '#172033',
     background: 'transparent',
     fontFamily:
       'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
@@ -932,9 +943,9 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    color: '#ffffff',
+    color: '#172033',
     background:
-      'radial-gradient(circle at top, #172554, #030712 65%)',
+      'linear-gradient(135deg, #f7f9ff, #f8f5ff 52%, #f3fbff)',
     fontFamily:
       'Inter, ui-sans-serif, system-ui, sans-serif',
   },
@@ -989,7 +1000,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   muted: {
     margin: 0,
-    color: '#94a3b8',
+    color: '#64748b',
     lineHeight: 1.7,
   },
 
@@ -1019,16 +1030,16 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     cursor: 'pointer',
     fontWeight: 750,
-    color: '#cbd5e1',
+    color: '#64748b',
     border: '1px solid rgba(255,255,255,.1)',
-    background: 'rgba(15,23,42,.6)',
+    background: '#172033',
   },
 
   userBox: {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 13,
   },
 
@@ -1044,10 +1055,10 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'relative',
     overflow: 'hidden',
     borderRadius: 30,
-    border: '1px solid rgba(255,255,255,.11)',
+    border: '1px solid #e4e7f4',
     background:
-      'linear-gradient(135deg, rgba(30,64,175,.48), rgba(88,28,135,.40), rgba(15,23,42,.9))',
-    boxShadow: '0 30px 80px rgba(0,0,0,.3)',
+      'linear-gradient(135deg, #ffffff, #f3f5ff 48%, #f8f2ff)',
+    boxShadow: '0 24px 70px rgba(83,91,150,.14)',
   },
 
   heroGlowOne: {
@@ -1108,7 +1119,7 @@ const styles: Record<string, React.CSSProperties> = {
   productDescription: {
     margin: 0,
     maxWidth: 720,
-    color: '#cbd5e1',
+    color: '#64748b',
     lineHeight: 1.75,
   },
 
@@ -1145,7 +1156,7 @@ const styles: Record<string, React.CSSProperties> = {
   statCard: {
     padding: '15px 17px',
     borderRadius: 17,
-    border: '1px solid rgba(255,255,255,.09)',
+    border: '1px solid #e5e8f2',
     background:
       'linear-gradient(135deg, rgba(255,255,255,.09), rgba(255,255,255,.035))',
   },
@@ -1157,7 +1168,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   statLabel: {
     marginTop: 3,
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 13,
     fontWeight: 700,
   },
@@ -1168,8 +1179,8 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 22,
     border: '1px solid rgba(99,102,241,.16)',
     background:
-      'linear-gradient(135deg, rgba(30,64,175,.20), rgba(88,28,135,.15), rgba(15,23,42,.78))',
-    boxShadow: '0 20px 50px rgba(0,0,0,.16)',
+      'linear-gradient(135deg, #ffffff, #f6f7ff 55%, #faf5ff)',
+    boxShadow: '0 18px 48px rgba(83,91,150,.10)',
   },
 
   progressTop: {
@@ -1192,7 +1203,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   progressDescription: {
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 14,
   },
 
@@ -1207,7 +1218,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 18,
     overflow: 'hidden',
     borderRadius: 999,
-    background: 'rgba(255,255,255,.07)',
+    background: '#e9ecf5',
   },
 
   progressFill: {
@@ -1262,10 +1273,10 @@ const styles: Record<string, React.CSSProperties> = {
   sectionCard: {
     overflow: 'hidden',
     borderRadius: 23,
-    border: '1px solid rgba(255,255,255,.09)',
+    border: '1px solid #e5e8f2',
     background:
-      'linear-gradient(145deg, rgba(30,41,59,.76), rgba(15,23,42,.9))',
-    boxShadow: '0 18px 50px rgba(0,0,0,.16)',
+      '#172033',
+    boxShadow: '0 14px 38px rgba(83,91,150,.08)',
   },
 
   sectionHeader: {
@@ -1273,7 +1284,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 15,
     padding: '19px 20px',
-    borderBottom: '1px solid rgba(255,255,255,.065)',
+    borderBottom: '1px solid #edf0f6',
     background:
       'linear-gradient(90deg, rgba(37,99,235,.11), rgba(124,58,237,.08))',
   },
@@ -1318,7 +1329,7 @@ const styles: Record<string, React.CSSProperties> = {
   sectionLessonCount: {
     padding: '7px 10px',
     borderRadius: 999,
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 12,
     fontWeight: 850,
     background: 'rgba(255,255,255,.05)',
@@ -1346,7 +1357,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '14px 12px',
     margin: 0,
     textAlign: 'left',
-    color: '#ffffff',
+    color: '#172033',
     cursor: 'pointer',
     border: 0,
     borderRadius: 15,
@@ -1357,7 +1368,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   lessonCompleted: {
     background:
-      'linear-gradient(90deg, rgba(6,78,59,.20), rgba(15,23,42,.1))',
+      'linear-gradient(90deg, #f0fdf4, #ffffff)',
   },
 
   lessonIcon: {
@@ -1411,7 +1422,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   lessonTitle: {
-    color: '#e2e8f0',
+    color: '#263247',
     fontSize: 13,
     fontWeight: 750,
     lineHeight: 1.4,
@@ -1466,7 +1477,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 22,
     border: '1px solid rgba(255,255,255,.08)',
     background:
-      'linear-gradient(135deg, rgba(30,41,59,.65), rgba(15,23,42,.8))',
+      'linear-gradient(135deg, #ffffff, #f7f8ff)',
   },
 
   emptyProductIcon: {
@@ -1491,7 +1502,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 17,
     border: '1px solid rgba(52,211,153,.14)',
     background:
-      'linear-gradient(135deg, rgba(6,78,59,.25), rgba(15,23,42,.62))',
+      'linear-gradient(135deg, #f0fdf4, #ffffff)',
   },
 
   securityIcon: {
@@ -1509,7 +1520,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   securityText: {
     marginTop: 3,
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 14,
     lineHeight: 1.5,
   },
