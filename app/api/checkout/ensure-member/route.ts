@@ -27,7 +27,16 @@ export async function POST(request: NextRequest) {
     }
 
     const member = await ensureMemberAccount(admin,{email,fullName,phone})
-    return NextResponse.json({ok:true,user_id:member.userId,invited:member.invited})
+    if (member.invited || member.createdProfile) {
+      const queued = await admin.rpc('queue_account_notification',{
+        p_user_id:member.userId,
+        p_event_key:'member.registered',
+        p_context:{name:fullName,email,phone},
+        p_action_url:'/login',
+      })
+      if (queued.error) console.error('member.registered notification:', queued.error.message)
+    }
+    return NextResponse.json({ok:true,user_id:member.userId,invited:member.invited,created_profile:member.createdProfile})
   } catch (e:unknown) {
     return NextResponse.json({error:e instanceof Error?e.message:'Gagal menyiapkan akun member.'},{status:400})
   }

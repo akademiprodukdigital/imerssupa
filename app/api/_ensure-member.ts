@@ -49,6 +49,7 @@ export async function ensureMemberAccount(
 
   // Role akun dan hak akses produk adalah dua hal berbeda.
   // Akun existing (member/agency/admin/super_admin) tidak pernah diubah rolenya saat membeli produk.
+  const createdProfile = !existingProfile
   if (!existingProfile) {
     const { error: insertError } = await admin.from('profiles').insert({
       id: authUser.id,
@@ -61,5 +62,5 @@ export async function ensureMemberAccount(
     if (insertError) throw insertError
   }
 
-  return { userId: authUser.id, invited }
+  return { userId: authUser.id, invited, createdProfile }
 }

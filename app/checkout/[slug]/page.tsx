@@ -44,6 +44,7 @@ export default function CheckoutPage(){
   const r=await supabase.rpc('create_checkout_order_secure',{p_items:[{product_id:product.id,quantity:1}],p_buyer_name:form.name.trim(),p_buyer_email:form.email.trim().toLowerCase(),p_buyer_phone:form.phone.trim()||null,p_coupon_code:coupon.trim()||null,p_visitor_key:visitorKey(),p_customer_note:form.note.trim()||null,p_idempotency_key:crypto.randomUUID()})
   if(r.error){setError(r.error.message);setBusy(false);return}
   const o=r.data as any;if(o.checkout_token)sessionStorage.setItem(`imerssupa_checkout_${o.order_id}`,o.checkout_token)
+  void fetch('/api/notifications/process',{method:'POST'}).catch(()=>undefined)
   router.push(`/checkout/order/${o.order_id}`);setBusy(false)
  }
 

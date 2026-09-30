@@ -367,6 +367,7 @@ export default function OrderPaymentPage() {
       }
 
       await loadOrderOnly()
+      void fetch('/api/notifications/process',{method:'POST'}).catch(()=>undefined)
     } catch (err) {
       setError(
         err instanceof Error

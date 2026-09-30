@@ -107,10 +107,8 @@ export default function AdminOrdersPage() {
     })
     const result = await response.json()
     if (!response.ok) setError(result.error || 'Gagal mengaktifkan order.')
-    else {
-      setDetail(result.detail as OrderDetail)
-      await loadData()
-    }
+    else await loadData()
+    setDetail(null)
     setActivating(false)
   }
 

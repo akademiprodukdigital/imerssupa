@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { ensureMemberAccount } from '../../../_ensure-member'
+import { processNotificationOutbox } from '../../../../../lib/notification-worker'
 
 export const runtime = 'nodejs'
 
@@ -62,7 +63,9 @@ export async function POST(request: NextRequest) {
 
     const {data,error}=await caller.rpc('admin_activate_order_simple',{p_order_id:canonicalOrderId})
     if(error) throw error
-    return NextResponse.json({ok:true,detail:data,buyer_user_id:buyerUserId,order_id:canonicalOrderId})
+    let notification:any=null
+    try { notification=await processNotificationOutbox(20) } catch(workerError:any) { notification={error:String(workerError?.message||workerError)} }
+    return NextResponse.json({ok:true,detail:data,buyer_user_id:buyerUserId,order_id:canonicalOrderId,notification})
   } catch(e:unknown){
     const err = e as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown }
     const message = typeof err?.message === 'string' && err.message.trim()
