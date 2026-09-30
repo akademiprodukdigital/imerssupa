@@ -4,6 +4,8 @@ import { ensureMemberAccount } from '../../../_ensure-member'
 
 export const runtime = 'nodejs'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 export async function POST(request: NextRequest) {
   try {
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -20,35 +22,47 @@ export async function POST(request: NextRequest) {
     if(authError||!user) return NextResponse.json({error:'Session admin tidak valid.'},{status:401})
 
     const {data:profile,error:profileError}=await caller.from('profiles').select('role,status').eq('id',user.id).maybeSingle()
-    if(profileError||!profile||profile.status!=='active'||!['super_admin','admin'].includes(profile.role||'')) {
-      return NextResponse.json({error:'Admin access required.'},{status:403})
-    }
+    if(profileError||!profile||profile.status!=='active'||!['super_admin','admin'].includes(profile.role||'')) return NextResponse.json({error:'Admin access required.'},{status:403})
 
-    const body=await request.json()
-    const orderId=String(body.order_id||'')
-    if(!orderId) return NextResponse.json({error:'Order ID wajib diisi.'},{status:400})
+    const body=await request.json() as {order_id?:unknown;order_number?:unknown}
+    const rawId=String(body.order_id||'').trim()
+    const orderNumber=String(body.order_number||'').trim()
+    if(!rawId&&!orderNumber) return NextResponse.json({error:'Order ID / nomor order wajib diisi.'},{status:400})
 
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}})
-    const {data:order,error:orderError}=await admin.from('orders')
-      .select('id,buyer_user_id,buyer_name,buyer_email,buyer_phone,status,payment_status')
-      .eq('id',orderId).maybeSingle()
-    if(orderError||!order) return NextResponse.json({error:'Order tidak ditemukan.'},{status:404})
+    const fields='id,order_number,buyer_user_id,buyer_name,buyer_email,buyer_phone,status,payment_status'
+    let order:any=null
+    let orderError:any=null
 
-    let buyerUserId=order.buyer_user_id
+    if(rawId && UUID_RE.test(rawId)){
+      const result=await admin.from('orders').select(fields).eq('id',rawId).maybeSingle()
+      order=result.data; orderError=result.error
+    }
+    if(!order && orderNumber){
+      const result=await admin.from('orders').select(fields).eq('order_number',orderNumber).maybeSingle()
+      order=result.data; orderError=result.error
+    }
+    if(!order && rawId && !UUID_RE.test(rawId)){
+      const result=await admin.from('orders').select(fields).eq('order_number',rawId).maybeSingle()
+      order=result.data; orderError=result.error
+    }
+    if(orderError) throw orderError
+    if(!order) return NextResponse.json({error:`Order ${orderNumber||rawId} tidak ditemukan di database.`},{status:404})
+
+    const canonicalOrderId=String(order.id)
+    let buyerUserId=order.buyer_user_id ? String(order.buyer_user_id) : ''
     if(!buyerUserId){
-      const member=await ensureMemberAccount(admin,{
-        email:String(order.buyer_email||''),
-        fullName:String(order.buyer_name||'Member'),
-        phone:order.buyer_phone ? String(order.buyer_phone) : null,
-      })
+      const email=String(order.buyer_email||'').trim().toLowerCase()
+      if(!email) return NextResponse.json({error:'Email pembeli kosong; member tidak dapat dibuat.'},{status:400})
+      const member=await ensureMemberAccount(admin,{email,fullName:String(order.buyer_name||'Member'),phone:order.buyer_phone?String(order.buyer_phone):null})
       buyerUserId=member.userId
-      const {error:bindError}=await admin.from('orders').update({buyer_user_id:buyerUserId}).eq('id',orderId)
+      const {error:bindError}=await admin.from('orders').update({buyer_user_id:buyerUserId}).eq('id',canonicalOrderId)
       if(bindError) throw bindError
     }
 
-    const {data,error}=await caller.rpc('admin_activate_order_simple',{p_order_id:orderId})
+    const {data,error}=await caller.rpc('admin_activate_order_simple',{p_order_id:canonicalOrderId})
     if(error) throw error
-    return NextResponse.json({ok:true,detail:data,buyer_user_id:buyerUserId})
+    return NextResponse.json({ok:true,detail:data,buyer_user_id:buyerUserId,order_id:canonicalOrderId})
   } catch(e:unknown){
     return NextResponse.json({error:e instanceof Error?e.message:'Gagal mengaktifkan order.'},{status:400})
   }

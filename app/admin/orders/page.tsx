@@ -47,7 +47,7 @@ export default function AdminOrdersPage() {
   const [detail,setDetail] = useState<OrderDetail|null>(null)
   const [detailLoading,setDetailLoading] = useState(false)
   const [activating,setActivating] = useState(false)
-  const [confirmActivateId,setConfirmActivateId] = useState<string|null>(null)
+  const [confirmActivate,setConfirmActivate] = useState<{id:string;orderNumber:string}|null>(null)
 
   useEffect(() => { void checkAccess() }, [])
 
@@ -95,15 +95,15 @@ export default function AdminOrdersPage() {
     setDetailLoading(false)
   }
 
-  async function activateOrder(orderId:string) {
-    setConfirmActivateId(null)
+  async function activateOrder(orderId:string, orderNumber?:string) {
+    setConfirmActivate(null)
     setActivating(true)
     setError('')
     const { data:{session} } = await supabase.auth.getSession()
     const response = await fetch('/api/admin/orders/activate',{
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:`Bearer ${session?.access_token || ''}`},
-      body:JSON.stringify({order_id:orderId}),
+      body:JSON.stringify({order_id:orderId,order_number:orderNumber || null}),
     })
     const result = await response.json()
     if (!response.ok) setError(result.error || 'Gagal mengaktifkan order.')
@@ -183,18 +183,18 @@ export default function AdminOrdersPage() {
       </section>
     </main>
 
-  {(detail || detailLoading) && <div className="modal-backdrop" onMouseDown={()=>!detailLoading&&setDetail(null)}><aside className="drawer" onMouseDown={e=>e.stopPropagation()}>{detailLoading ? <Empty text="Memuat detail order..."/> : detail && <OrderDrawer detail={detail} close={()=>setDetail(null)} requestActivate={(id)=>setConfirmActivateId(id)} activating={activating}/>}</aside></div>}
+  {(detail || detailLoading) && <div className="modal-backdrop" onMouseDown={()=>!detailLoading&&setDetail(null)}><aside className="drawer" onMouseDown={e=>e.stopPropagation()}>{detailLoading ? <Empty text="Memuat detail order..."/> : detail && <OrderDrawer detail={detail} close={()=>setDetail(null)} requestActivate={(id,orderNumber)=>setConfirmActivate({id,orderNumber})} activating={activating}/>}</aside></div>}
 
-  {confirmActivateId && (
-    <div className="confirm-overlay" role="presentation" onMouseDown={()=>!activating&&setConfirmActivateId(null)}>
+  {confirmActivate && (
+    <div className="confirm-overlay" role="presentation" onMouseDown={()=>!activating&&setConfirmActivate(null)}>
       <div className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="activate-order-title" onMouseDown={e=>e.stopPropagation()}>
         <div className="confirm-icon">✓</div>
         <span className="eyebrow">KONFIRMASI ORDER</span>
         <h3 id="activate-order-title">Aktifkan order sekarang?</h3>
         <p>Member akan langsung mendapatkan akses produk dari order ini. Pastikan data order sudah benar.</p>
         <div className="confirm-actions">
-          <button type="button" className="confirm-cancel" disabled={activating} onClick={()=>setConfirmActivateId(null)}>Batal</button>
-          <button type="button" className="confirm-primary" disabled={activating} onClick={()=>void activateOrder(confirmActivateId)}>
+          <button type="button" className="confirm-cancel" disabled={activating} onClick={()=>setConfirmActivate(null)}>Batal</button>
+          <button type="button" className="confirm-primary" disabled={activating} onClick={()=>void activateOrder(confirmActivate.id,confirmActivate.orderNumber)}>
             {activating ? 'Mengaktifkan...' : '✓ Ya, Aktifkan Order'}
           </button>
         </div>
@@ -208,7 +208,7 @@ export default function AdminOrdersPage() {
 function Stat({label,value,hint,icon}:{label:string;value:string;hint:string;icon:string}) { return <article className="stat"><span className="stat-icon">{icon}</span><div><small>{label}</small><strong>{value}</strong><p>{hint}</p></div></article> }
 function Empty({text}:{text:string}) { return <div className="empty"><span>◌</span><strong>{text}</strong></div> }
 function Badge({value,payment=false}:{value:string;payment?:boolean}) { const tone=['paid','completed'].includes(value)?'good':['cancelled','failed','refunded','expired'].includes(value)?'bad':['pending','unpaid','awaiting_payment'].includes(value)?'warn':'info'; return <span className={`badge ${tone}`}>{payment?'● ':''}{pretty(value)}</span> }
-function OrderDrawer({detail,close,requestActivate,activating}:{detail:OrderDetail;close:()=>void;requestActivate:(orderId:string)=>void;activating:boolean}) {
+function OrderDrawer({detail,close,requestActivate,activating}:{detail:OrderDetail;close:()=>void;requestActivate:(orderId:string,orderNumber:string)=>void;activating:boolean}) {
   const o=detail.order
   return <><div className="drawer-head"><div><span className="eyebrow">ORDER DETAIL</span><h2>{o.order_number}</h2><p>{dateLong(o.created_at)}</p></div><button onClick={close}>×</button></div>
     <div className="drawer-body">
@@ -223,7 +223,7 @@ function OrderDrawer({detail,close,requestActivate,activating}:{detail:OrderDeta
         {(o.status==='completed' && o.payment_status==='paid') ? (
           <button className="activate-order done" type="button" disabled>✓ ORDER SUDAH AKTIF</button>
         ) : (
-          <button className="activate-order" type="button" disabled={activating} onClick={()=>requestActivate(o.id)}>
+          <button className="activate-order" type="button" disabled={activating} onClick={()=>requestActivate(String(o.id||''),String(o.order_number||''))}>
             {activating ? 'Mengaktifkan...' : '✓ AKTIFKAN ORDER'}
           </button>
         )}

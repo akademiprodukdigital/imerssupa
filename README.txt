@@ -1,12 +1,11 @@
-iMersSUPA v1.7.20
+iMersSUPA HOTFIX v1.7.21
 SQL MIGRATION: NOT REQUIRED
-FRONTEND/SERVER UPDATE: REQUIRED
+FRONTEND/API UPDATE: REQUIRED
 
-Build/type fix:
-- app/api/_ensure-member.ts no longer derives an invalid `never` schema type from ReturnType<typeof createClient>.
-- Server-only Supabase admin helper is explicitly untyped (`admin: any`) because this project does not supply generated Database types to createClient.
-- Fix covers BOTH profile read and profile upsert paths, including the exact v1.7.19 error:
-  Object literal may only specify known properties, and 'id' does not exist in type 'never[]'.
+Fix:
+- Orders -> Detail -> AKTIFKAN ORDER now sends both database UUID and visible order_number.
+- Activation API resolves the canonical order UUID safely from UUID or order_number.
+- Existing orders such as IMS-20260924-DC8F3C86 are not recreated/deleted.
+- Existing admin auth, ensure-member flow, and admin_activate_order_simple RPC are preserved.
 
-Business flow unchanged:
-checkout -> member exists/created -> order recorded -> access granted only after payment/admin activation.
+Replace these files preserving paths, then redeploy.
