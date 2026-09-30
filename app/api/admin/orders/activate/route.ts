@@ -35,15 +35,15 @@ export async function POST(request: NextRequest) {
     let orderError:any=null
 
     if(rawId && UUID_RE.test(rawId)){
-      const result=await admin.from('orders').select(fields).eq('id',rawId).maybeSingle()
+      const result=await caller.from('orders').select(fields).eq('id',rawId).maybeSingle()
       order=result.data; orderError=result.error
     }
     if(!order && orderNumber){
-      const result=await admin.from('orders').select(fields).eq('order_number',orderNumber).maybeSingle()
+      const result=await caller.from('orders').select(fields).eq('order_number',orderNumber).maybeSingle()
       order=result.data; orderError=result.error
     }
     if(!order && rawId && !UUID_RE.test(rawId)){
-      const result=await admin.from('orders').select(fields).eq('order_number',rawId).maybeSingle()
+      const result=await caller.from('orders').select(fields).eq('order_number',rawId).maybeSingle()
       order=result.data; orderError=result.error
     }
     if(orderError) throw orderError
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       if(!email) return NextResponse.json({error:'Email pembeli kosong; member tidak dapat dibuat.'},{status:400})
       const member=await ensureMemberAccount(admin,{email,fullName:String(order.buyer_name||'Member'),phone:order.buyer_phone?String(order.buyer_phone):null})
       buyerUserId=member.userId
-      const {error:bindError}=await admin.from('orders').update({buyer_user_id:buyerUserId}).eq('id',canonicalOrderId)
+      const {error:bindError}=await caller.rpc('admin_bind_order_buyer',{p_order_id:canonicalOrderId,p_user_id:buyerUserId})
       if(bindError) throw bindError
     }
 
