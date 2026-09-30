@@ -1,0 +1,9 @@
+iMersSUPA HOTFIX v1.7.22
+SQL MIGRATION: REQUIRED
+
+URUTAN WAJIB:
+1. Supabase SQL Editor: jalankan supabase/migrations/iMersSUPA-MIGRATION-v1.7.22-ORDER-ACTIVATION-CANONICAL.sql
+2. Deploy file frontend/API hotfix ini.
+3. Test Orders > Detail > AKTIFKAN ORDER pada order pending/unpaid.
+
+Jangan jalankan MASTER fresh installer pada database existing.

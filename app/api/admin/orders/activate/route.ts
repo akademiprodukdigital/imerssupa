@@ -64,6 +64,17 @@ export async function POST(request: NextRequest) {
     if(error) throw error
     return NextResponse.json({ok:true,detail:data,buyer_user_id:buyerUserId,order_id:canonicalOrderId})
   } catch(e:unknown){
-    return NextResponse.json({error:e instanceof Error?e.message:'Gagal mengaktifkan order.'},{status:400})
+    const err = e as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown }
+    const message = typeof err?.message === 'string' && err.message.trim()
+      ? err.message
+      : typeof e === 'string' && e.trim()
+        ? e
+        : 'Gagal mengaktifkan order.'
+    return NextResponse.json({
+      error: message,
+      code: typeof err?.code === 'string' ? err.code : null,
+      details: typeof err?.details === 'string' ? err.details : null,
+      hint: typeof err?.hint === 'string' ? err.hint : null,
+    },{status:400})
   }
 }
