@@ -47,19 +47,19 @@ export async function ensureMemberAccount(
   if (profileResult.error) throw profileResult.error
   const existingProfile = profileResult.data as { id: string; role: string | null; status: string | null } | null
 
-  if (existingProfile?.role && existingProfile.role !== 'member') {
-    throw new Error(`Email ${email} sudah dipakai akun ${existingProfile.role}; tidak diubah menjadi member.`)
+  // Role akun dan hak akses produk adalah dua hal berbeda.
+  // Akun existing (member/agency/admin/super_admin) tidak pernah diubah rolenya saat membeli produk.
+  if (!existingProfile) {
+    const { error: insertError } = await admin.from('profiles').insert({
+      id: authUser.id,
+      full_name: fullName,
+      phone,
+      role: 'member',
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    })
+    if (insertError) throw insertError
   }
 
-  const { error: upsertError } = await admin.from('profiles').upsert({
-    id: authUser.id,
-    full_name: fullName,
-    phone,
-    role: 'member',
-    status: 'active',
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'id' })
-
-  if (upsertError) throw upsertError
   return { userId: authUser.id, invited }
 }

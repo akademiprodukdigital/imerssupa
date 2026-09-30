@@ -1,11 +1,9 @@
-iMersSUPA HOTFIX v1.7.21
-SQL MIGRATION: NOT REQUIRED
+iMersSUPA HOTFIX v1.7.24
+SQL MIGRATION: REQUIRED
 FRONTEND/API UPDATE: REQUIRED
 
-Fix:
-- Orders -> Detail -> AKTIFKAN ORDER now sends both database UUID and visible order_number.
-- Activation API resolves the canonical order UUID safely from UUID or order_number.
-- Existing orders such as IMS-20260924-DC8F3C86 are not recreated/deleted.
-- Existing admin auth, ensure-member flow, and admin_activate_order_simple RPC are preserved.
+1. Jalankan supabase/migrations/iMersSUPA-MIGRATION-v1.7.24-ROLE-INDEPENDENT-PRODUCT-ACCESS.sql
+2. Replace app/api/_ensure-member.ts
+3. Deploy ulang Vercel.
 
-Replace these files preserving paths, then redeploy.
+Rule: order/product access tidak bergantung pada role akun. Existing role tidak diubah.
