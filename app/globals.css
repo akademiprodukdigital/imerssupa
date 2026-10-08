@@ -862,3 +862,35 @@ html[data-theme='light']
     display: none;
   }
 }
+
+/* v1.7.30: admin theme switcher belongs to the header flow, never floating. */
+.admin-shell > .theme-switcher { position: fixed; top: 17px; right: 20px; z-index: 30; }
+.admin-shell .topbar { padding-right: 164px !important; }
+.admin-shell .topbar .top-actions { min-width: 0; }
+.admin-shell .topbar .profile-button { max-width: min(260px, 32vw); }
+.admin-shell .topbar .profile-button span { min-width: 0; }
+@media(max-width:700px){ .admin-shell > .theme-switcher {top: 12px;right:12px;bottom:auto;} .admin-shell .topbar {padding-right: 145px !important;} }
+/* All secondary admin pages mount the switcher inside their topbar. */
+.admin-page .topbar .theme-switcher,
+.admin-shell .topbar .theme-switcher,
+body:has(main > .topbar) main > .topbar .theme-switcher {
+  position: static !important; top: auto !important; right: auto !important;
+  bottom: auto !important; z-index: auto !important; margin: 0 !important;
+  flex: 0 0 auto !important;
+}
+body:has(main > .topbar) main > .topbar .top-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; min-width:0; flex-shrink:0; }
+body:has(main > .topbar) main > .topbar .mini-profile {min-width:0; max-width:min(220px,26vw); overflow:hidden;}
+body:has(main > .topbar) main > .topbar .mini-profile strong {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+body:has(main > .topbar) main > .topbar .search-top {flex-shrink:1;min-width:0;}
+@media(max-width:700px){body:has(main > .topbar) main > .topbar .mini-profile span:last-child{display:none;}body:has(main > .topbar) main > .topbar{padding-inline:12px !important;}}
+/* Apply actual theme tokens to shared secondary-admin surfaces. */
+html[data-theme='dark'] body:has(main > .topbar) .topbar {background:var(--topbar-bg) !important;border-color:var(--border) !important;}
+html[data-theme='dark'] body:has(main > .topbar) .sidebar {background:var(--surface-strong) !important;color:var(--text-primary) !important;}
+html[data-theme='dark'] body:has(main > .topbar) main {background:var(--page-gradient) !important;color:var(--text-primary) !important;}
+html[data-theme='dark'] body:has(main > .topbar) .content > section,
+html[data-theme='dark'] body:has(main > .topbar) .content > .table-card,
+html[data-theme='dark'] body:has(main > .topbar) .mini-profile,
+html[data-theme='dark'] body:has(main > .topbar) .search-top {background:var(--surface-gradient) !important;color:var(--text-primary) !important;border-color:var(--border) !important;}
+html[data-theme='dark'] body:has(main > .topbar) .content h1,
+html[data-theme='dark'] body:has(main > .topbar) .content h2,
+html[data-theme='dark'] body:has(main > .topbar) .content strong {color:var(--text-primary) !important;}
