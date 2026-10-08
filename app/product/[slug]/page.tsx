@@ -18,6 +18,11 @@ type Product = {
   sales_page_mode?: 'none' | 'internal' | 'external' | null
   sales_page_html?: string | null
   external_sales_page_url?: string | null
+  checkout_mode?: 'internal' | 'external' | 'hybrid' | null
+  affiliate_checkout_url?: string | null
+  affiliate_cta_text?: string | null
+  internal_cta_text?: string | null
+  primary_checkout?: 'internal' | 'external' | null
 }
 
 type Media = {
@@ -116,6 +121,15 @@ export default function PublicProductPage() {
     setLoading(false)
   }
 
+  function officialBuy() {
+    if (!product?.affiliate_checkout_url) return
+    try {
+      const target = new URL(product.affiliate_checkout_url)
+      if (!['https:', 'http:'].includes(target.protocol)) return
+      window.open(target.toString(), '_blank', 'noopener,noreferrer')
+    } catch { /* ignore malformed external URLs */ }
+  }
+
   function buy() {
     if (!product) return
     const q = new URLSearchParams()
@@ -170,9 +184,14 @@ export default function PublicProductPage() {
     const coupon = qs.get('coupon'); const ref = qs.get('ref')
     if (coupon) q.set('coupon', coupon); if (ref) q.set('ref', ref)
     const checkout = `/checkout/${product.slug}${q.size ? `?${q.toString()}` : ''}`
+    const external = product.affiliate_checkout_url || ''
+    const primary = product.checkout_mode === 'external' || (product.checkout_mode === 'hybrid' && product.primary_checkout === 'external') ? external : checkout
     const rendered = product.sales_page_html
       .replaceAll('{{PRODUCT_NAME}}', product.name)
+      .replaceAll('{{PRODUCT_PRICE}}', money(product.price))
       .replaceAll('{{CHECKOUT_URL}}', checkout)
+      .replaceAll('{{AFFILIATE_URL}}', external)
+      .replaceAll('{{PRIMARY_CTA_URL}}', primary)
     // Force links/forms from internal sales pages to escape the sandbox and
     // navigate the real top-level app. Do NOT add allow-same-origin here.
     const topBase = '<base target="_top">'
@@ -232,13 +251,16 @@ export default function PublicProductPage() {
               <div><span>✓</span> Total dihitung ulang oleh server</div>
             </div>
 
-            <button className="btn primary" onClick={buy}>
-              Beli Sekarang <span>→</span>
-            </button>
-
-            <p className="secure">
-              🔒 Transaksi diproses melalui sistem checkout iMersSUPA.
-            </p>
+            {product.checkout_mode !== 'external' && (product.checkout_mode !== 'hybrid' || product.primary_checkout !== 'external') && (
+              <button className="btn primary" onClick={buy}>{product.internal_cta_text || 'Beli di Website Ini'} <span>→</span></button>
+            )}
+            {(product.checkout_mode === 'external' || product.checkout_mode === 'hybrid') && product.affiliate_checkout_url && (
+              <button className="btn primary" onClick={officialBuy} style={{marginTop:10, background: product.checkout_mode === 'hybrid' && product.primary_checkout !== 'external' ? '#eef2ff' : undefined, color: product.checkout_mode === 'hybrid' && product.primary_checkout !== 'external' ? '#4338ca' : undefined}}>{product.affiliate_cta_text || 'Checkout Official'} ↗</button>
+            )}
+            {product.checkout_mode === 'hybrid' && product.primary_checkout === 'external' && (
+              <button className="btn primary" onClick={buy} style={{marginTop:10,background:'#eef2ff',color:'#4338ca'}}>{product.internal_cta_text || 'Beli di Website Ini'} →</button>
+            )}
+            <p className="secure">{product.checkout_mode === 'external' ? '↗ Pembelian diproses oleh website official, bukan iMersSUPA.' : product.checkout_mode === 'hybrid' ? 'Pilih checkout internal atau website official sesuai kebutuhan.' : '🔒 Transaksi diproses melalui sistem checkout iMersSUPA.'}</p>
           </aside>
         </div>
       </main>

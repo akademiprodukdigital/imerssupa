@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../../../lib/supabase'
 import ThemeSwitcher from '../../../../components/ThemeSwitcher'
 
-type HomepageMode = 'marketplace' | 'custom_html' | 'off'
+type HomepageMode = 'marketplace' | 'adcstore' | 'custom_html' | 'off'
 
 type HomepageConfig = {
   mode: HomepageMode
@@ -197,7 +197,7 @@ export default function HomepageSettingsPage() {
             </div>
             <div className="status">
               <small>MODE AKTIF</small>
-              <strong>{config.mode === 'marketplace' ? 'Marketplace' : config.mode === 'custom_html' ? 'Custom HTML' : 'Homepage OFF'}</strong>
+              <strong>{config.mode === 'marketplace' ? 'Marketplace' : config.mode === 'adcstore' ? 'ADCStore' : config.mode === 'custom_html' ? 'Custom HTML' : 'Homepage OFF'}</strong>
               <span>● {saved ? 'Perubahan tersimpan' : 'Siap dikonfigurasi'}</span>
             </div>
           </section>
@@ -207,6 +207,7 @@ export default function HomepageSettingsPage() {
 
           <section className="modeGrid">
             <ModeCard active={config.mode==='marketplace'} icon="▦" title="Marketplace" desc="Homepage katalog produk digital bawaan." onClick={()=>patch('mode','marketplace')}/>
+            <ModeCard active={config.mode==='adcstore'} icon="✦" title="ADCStore" desc="Tema hitam-oranye, katalog digital modern, terinspirasi gaya ADClub." onClick={()=>patch('mode','adcstore')}/>
             <ModeCard active={config.mode==='custom_html'} icon="〈/〉" title="Custom HTML" desc="Gunakan single HTML landing page milik client." onClick={()=>patch('mode','custom_html')}/>
             <ModeCard active={config.mode==='off'} icon="○" title="Homepage OFF" desc="Nonaktifkan homepage publik dan arahkan visitor ke login." onClick={()=>patch('mode','off')}/>
           </section>
